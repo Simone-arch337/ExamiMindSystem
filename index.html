@@ -29,7 +29,7 @@
                 </select>
             </div>
 
-            <!-- 新增頁面與儲存架構按鈕區 -->
+            <!-- 新增頁面與全站總儲存按鈕區 -->
             <div class="p-3 border-b border-slate-800/60 bg-slate-950/40 flex flex-col gap-2">
                 <div class="flex gap-2">
                     <button onclick="openAddPageModal('main')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1.5 px-2 rounded border border-slate-700 flex items-center justify-center gap-1 transition">
@@ -39,9 +39,10 @@
                         <i class="fa-solid fa-file-circle-plus text-green-400"></i> 新增子頁面
                     </button>
                 </div>
-                <!-- 結構變更儲存按鈕 -->
-                <button onclick="window.saveTreeStructure()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs py-1.5 rounded transition flex items-center justify-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-floppy-disk"></i> 儲存頁面結構與順序變更
+                
+                <!-- 【全站防流失總儲存按鈕】 -->
+                <button onclick="window.saveAllSystemData()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存全站所有輸入、變更與劃記
                 </button>
             </div>
 
@@ -85,7 +86,7 @@
                     </div>
                 </header>
 
-                <!-- =================【子頁面 1：法規與簡潔小框框螢光筆】================= -->
+                <!-- =================【子頁面 1：法規與螢光筆劃記】================= -->
                 <div id="content-tab-law" class="p-6 tab-content flex gap-6">
                     <div class="flex-1 space-y-6" id="laws-card-list">
                         
@@ -110,13 +111,13 @@
                                 <button onclick="removeHighlight()" title="取消螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
-                                <button onclick="window.saveLawHighlights()" title="儲存劃記至 Firebase 雲端" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded transition ml-1">
-                                    <i class="fa-solid fa-cloud-arrow-up"></i> 雲端儲存劃記
+                                <button onclick="window.saveAllSystemData()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
+                                    <i class="fa-solid fa-floppy-disk"></i> 儲存劃記與法條
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 預設條文卡片 1 (已加入刪除按鈕) -->
+                        <!-- 預設條文卡片 1 -->
                         <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-lg font-bold text-slate-900 pr-12">第 4 條 (警械使用時機與比例原則)</h3>
@@ -134,7 +135,7 @@
                             </div>
                         </div>
 
-                        <!-- 預設條文卡片 2 (已加入刪除按鈕) -->
+                        <!-- 預設條文卡片 2 -->
                         <div class="law-card bg-white rounded-xl border border-red-200 p-6 shadow-sm relative overflow-hidden">
                             <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>
                             <div class="flex justify-between items-start mb-2 pt-1">
@@ -216,9 +217,14 @@
 
                         <div class="flex justify-between items-center pt-2">
                             <div id="ocr-status-indicator" class="text-xs font-mono text-slate-500">狀態：等待上傳...</div>
-                            <button onclick="processUploadAndCreateCard()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-5 py-2 rounded-lg transition">
-                                開始辨識並寫入卡片
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="processUploadAndCreateCard()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition">
+                                    開始辨識並寫入卡片
+                                </button>
+                                <button onclick="window.saveAllSystemData()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition font-bold">
+                                    <i class="fa-solid fa-floppy-disk"></i> 儲存筆記庫
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -268,6 +274,9 @@
                             <button onclick="toggleCorrection()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm px-4 py-2 rounded-lg transition">
                                 <i class="fa-solid fa-pen-to-square"></i> 開啟/展開逐選項訂正區
                             </button>
+                            <button onclick="window.saveAllSystemData()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition ml-auto">
+                                <i class="fa-solid fa-floppy-disk"></i> 儲存錯題檢討紀錄
+                            </button>
                         </div>
 
                         <div id="correction-area" class="hidden pt-4 border-t border-slate-200 space-y-4">
@@ -299,7 +308,7 @@
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 2</label><input type="text" id="admin-tab2-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 3</label><input type="text" id="admin-tab3-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 4</label><input type="text" id="admin-tab4-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
-                    <button onclick="saveAdminSettings()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-6 py-2 rounded-lg">儲存變更</button>
+                    <button onclick="saveAdminSettings()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-6 py-2 rounded-lg">儲存變更至雲端</button>
                 </div>
             </div>
 
@@ -459,7 +468,7 @@
 
         /* 刪除條文卡片功能 */
         function deleteLawCard(btnElement) {
-            if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「雲端儲存劃記」保存）")) {
+            if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「儲存全站」按鈕保存）")) {
                 const card = btnElement.closest('.law-card, .bg-white');
                 if (card) {
                     card.remove();
@@ -560,7 +569,7 @@
             document.getElementById('custom-law-text').value = "";
             document.getElementById('custom-law-is-new').checked = false;
             closeLawUploadModal();
-            alert(`🎉 辨識成功！已自動為您解析出 ${count} 則獨立條文卡片！`);
+            alert(`🎉 辨識成功！已自動為您解析出 ${count} 則獨立條文卡片！請記得點擊「儲存全站」進行雲端保存。`);
         }
 
         /* 螢光筆功能 */
@@ -644,7 +653,7 @@
             }
             fileInput.value = "";
             renderNoteCards();
-            alert("檔案已識別並成功歸檔！");
+            alert("檔案已識別並歸檔！請記得點擊「儲存全站」按鈕。");
         }
 
         function updateCardContent(cardId, newText) {
@@ -718,7 +727,7 @@
             systemData.tabs.tab4 = document.getElementById('admin-tab4-name').value;
             updateViewData();
             switchMode('student');
-            alert('後台設定已儲存！');
+            window.saveAllSystemData();
         }
 
         /* Modal 控制 */
@@ -785,7 +794,7 @@
         }
     </script>
 
-    <!-- Firebase 憑證連線與結構備份 -->
+    <!-- Firebase 雲端總儲存與自動載入核心引擎 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -803,57 +812,66 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      /* 1. 儲存樹狀選單結構與順序至雲端 */
-      window.saveTreeStructure = async function() {
+      /* 全站資料一鍵總儲存函數 */
+      window.saveAllSystemData = async function() {
+          const cardListHTML = document.getElementById('laws-card-list') ? document.getElementById('laws-card-list').innerHTML : '';
+          
           try {
+              // 1. 儲存樹狀選單結構與後台設定
               await setDoc(doc(db, "exam_settings", "system_data"), {
                   systemData: systemData,
                   updatedAt: new Date()
               });
-              alert("🎉 頁面結構、順序變更已成功同步備份至 Firebase 雲端！");
-          } catch (error) {
-              console.error("雲端儲存結構失敗：", error);
-              alert("儲存失敗，請檢查 Firebase 網路連線。");
-          }
-      };
 
-      /* 2. 儲存劃記與法條卡片清單至雲端 */
-      window.saveLawHighlights = async function() {
-          const cardListHTML = document.getElementById('laws-card-list').innerHTML;
-          try {
+              // 2. 儲存全站法條卡片與螢光筆劃記
               await setDoc(doc(db, "law_highlights", "police_laws"), {
                   fullListHTML: cardListHTML,
                   updatedAt: new Date()
               });
-              alert("法條卡片與劃記狀態已成功同步備份至 Firebase 雲端！");
+
+              // 3. 儲存個人筆記卡片陣列
+              await setDoc(doc(db, "note_cards_data", "user_notes"), {
+                  noteCards: noteCards,
+                  updatedAt: new Date()
+              });
+
+              alert("🎉 全站所有新增、修改、刪除、劃記與結構調整，已成功永久備份至 Firebase 雲端！");
           } catch (error) {
-              console.error("雲端儲存失敗：", error);
-              alert("儲存劃記失敗，請確認 Firebase 資料庫狀態。");
+              console.error("雲端全站儲存失敗：", error);
+              alert("儲存失敗，請確認 Firebase 網路連線或 Firestore 權限設定。");
           }
       };
 
-      /* 3. 頁面載入時讀取雲端結構與劃記 */
-      window.loadCloudData = async function() {
+      /* 頁面載入時自動從雲端恢復全站所有狀態 */
+      window.loadAllCloudData = async function() {
           try {
-              // 載入選單結構
+              // 讀取選單結構
               const structSnap = await getDoc(doc(db, "exam_settings", "system_data"));
               if (structSnap.exists()) {
                   systemData = structSnap.data().systemData;
                   updateViewData();
               }
-              // 載入劃記與最新卡片狀態
+
+              // 讀取法條卡片與劃記
               const docSnap = await getDoc(doc(db, "law_highlights", "police_laws"));
               if (docSnap.exists()) {
                   const data = docSnap.data();
                   if(data.fullListHTML) document.getElementById('laws-card-list').innerHTML = data.fullListHTML;
               }
+
+              // 讀取筆記卡片
+              const notesSnap = await getDoc(doc(db, "note_cards_data", "user_notes"));
+              if (notesSnap.exists()) {
+                  noteCards = notesSnap.data().noteCards || [];
+                  renderNoteCards();
+              }
           } catch (error) {
-              console.error("雲端資料載入失敗：", error);
+              console.error("全站雲端資料載入失敗：", error);
           }
       };
 
       window.addEventListener('DOMContentLoaded', () => {
-          window.loadCloudData();
+          window.loadAllCloudData();
       });
     </script>
 </body>
