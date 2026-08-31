@@ -87,14 +87,12 @@
                                 <i class="fa-solid fa-highlighter text-amber-500"></i> 框選文字劃記：
                             </div>
                             <div class="flex items-center gap-2">
-                                <!-- 黃/綠/粉 顏色小框框 -->
                                 <button onclick="applyHighlight('yellow')" title="標記黃色重點" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('green')" title="標記綠色重點" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('pink')" title="標記粉色重點" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
                                 
                                 <div class="h-4 w-px bg-slate-200 mx-1"></div>
                                 
-                                <!-- 變更顏色小框框 (帶點線框示範) -->
                                 <button onclick="changeHighlightColor('yellow')" title="將選取區改為黃色" class="w-6 h-6 rounded bg-yellow-200 border-2 border-dashed border-yellow-500 hover:scale-110 transition"></button>
                                 <button onclick="changeHighlightColor('green')" title="將選取區改為綠色" class="w-6 h-6 rounded bg-green-200 border-2 border-dashed border-green-500 hover:scale-110 transition"></button>
                                 <button onclick="changeHighlightColor('pink')" title="將選取區改為粉色" class="w-6 h-6 rounded bg-pink-200 border-2 border-dashed border-pink-500 hover:scale-110 transition"></button>
@@ -104,8 +102,8 @@
                                 <button onclick="removeHighlight()" title="取消螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
-                                <button onclick="saveLawHighlights()" title="儲存劃記" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded transition ml-1">
-                                    <i class="fa-solid fa-floppy-disk"></i> 儲存
+                                <button onclick="window.saveLawHighlights()" title="儲存劃記至 Firebase 雲端" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded transition ml-1">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> 雲端儲存
                                 </button>
                             </div>
                         </div>
@@ -378,7 +376,6 @@
         window.onload = function() {
             renderExamSelect();
             updateViewData();
-            loadLawHighlights();
             renderNoteCards();
         };
 
@@ -461,19 +458,6 @@
             highlightedSpans.forEach(span => {
                 if (selection.containsNode(span, true)) span.className = "highlight-" + newColor;
             });
-        }
-
-        function saveLawHighlights() {
-            localStorage.setItem('law_highlight_4', document.getElementById('law-content-4').innerHTML);
-            localStorage.setItem('law_highlight_10_1', document.getElementById('law-content-10-1').innerHTML);
-            alert("法條劃記已成功儲存！");
-        }
-
-        function loadLawHighlights() {
-            const saved4 = localStorage.getItem('law_highlight_4');
-            const saved10 = localStorage.getItem('law_highlight_10_1');
-            if (saved4) document.getElementById('law-content-4').innerHTML = saved4;
-            if (saved10) document.getElementById('law-content-10-1').innerHTML = saved10;
         }
 
         /* 筆記卡片渲染 */
@@ -657,6 +641,64 @@
             closePageModal();
             updateViewData();
         }
+    </script>
+
+    <!-- 引入 Firebase SDK 並對接您的專屬專案憑證 -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+      // 貼入您帶入的專屬專案金鑰
+      const firebaseConfig = {
+        apiKey: "AIzaSyAe9uqCSGiMoeaa_2NcleMUIfTNhzAjBDo",
+        authDomain: "examimindsystem.firebaseapp.com",
+        projectId: "examimindsystem",
+        storageBucket: "examimindsystem.firebasestorage.app",
+        messagingSenderId: "922145488881",
+        appId: "1:922145488881:web:af2fc521085321d8e00e50",
+        measurementId: "G-ZE1TPG3L7P"
+      };
+
+      // 初始化 Firebase 與 Firestore
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // 1. 儲存螢光筆劃記至 Firebase 雲端資料庫
+      window.saveLawHighlights = async function() {
+          const card4 = document.getElementById('law-content-4').innerHTML;
+          const card10 = document.getElementById('law-content-10-1').innerHTML;
+          
+          try {
+              await setDoc(doc(db, "law_highlights", "police_laws"), {
+                  card4: card4,
+                  card10: card10,
+                  updatedAt: new Date()
+              });
+              alert("劃記已成功同步備份至 Firebase 雲端！");
+          } catch (error) {
+              console.error("雲端儲存失敗：", error);
+              alert("儲存失敗，請確認 Firebase 資料庫 (Firestore) 是否已在 Console 中開啟為測試模式。");
+          }
+      };
+
+      // 2. 開啟網頁時，自動從雲端載入劃記
+      window.loadLawHighlights = async function() {
+          try {
+              const docSnap = await getDoc(doc(db, "law_highlights", "police_laws"));
+              if (docSnap.exists()) {
+                  const data = docSnap.data();
+                  if(data.card4) document.getElementById('law-content-4').innerHTML = data.card4;
+                  if(data.card10) document.getElementById('law-content-10-1').innerHTML = data.card10;
+              }
+          } catch (error) {
+              console.error("雲端載入失敗：", error);
+          }
+      };
+
+      // 網頁載入後自動觸發雲端劃記載入
+      window.addEventListener('DOMContentLoaded', () => {
+          window.loadLawHighlights();
+      });
     </script>
 </body>
 </html>
