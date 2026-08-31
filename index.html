@@ -55,8 +55,9 @@
                                 <span class="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full border border-red-200">近3年有新修條文</span>
                             </h1>
                         </div>
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
-                            <i class="fa-solid fa-rotate"></i> 同步全國法規資料庫
+                        <!-- 修改後的按鈕：改為手動上傳/貼上最新法條 -->
+                        <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-file-arrow-up"></i> 上傳/貼上最新法條
                         </button>
                     </div>
 
@@ -79,9 +80,9 @@
 
                 <!-- =================【子頁面 1：法規與簡潔小框框螢光筆】================= -->
                 <div id="content-tab-law" class="p-6 tab-content flex gap-6">
-                    <div class="flex-1 space-y-6">
+                    <div class="flex-1 space-y-6" id="laws-card-list">
                         
-                        <!-- 極簡螢光筆工具列：顏色小框框設計 -->
+                        <!-- 極簡螢光筆工具列 -->
                         <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between sticky top-0 z-10">
                             <div class="text-xs text-slate-500 font-medium flex items-center gap-2">
                                 <i class="fa-solid fa-highlighter text-amber-500"></i> 框選文字劃記：
@@ -319,7 +320,7 @@
         </main>
     </div>
 
-    <!-- 頁面 Modal -->
+    <!-- 新增/編輯頁面 Modal -->
     <div id="page-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-slate-200 space-y-4">
             <h3 class="text-base font-bold text-slate-900" id="modal-title">新增頁面</h3>
@@ -329,6 +330,39 @@
                 <select id="select-parent-main" class="w-full p-2 border rounded text-sm bg-slate-50"></select>
             </div>
             <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定</button></div>
+        </div>
+    </div>
+
+    <!-- 上傳/貼上最新法條 Modal 彈窗 -->
+    <div id="law-upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-[500px] p-6 border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳或貼上最新法條內容</h3>
+                <button onclick="closeLawUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">1. 法條標題 (例如：第 11 條 警械選擇要件)</label>
+                    <input type="text" id="custom-law-title" placeholder="請輸入條號與名稱" class="w-full p-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">2. 選擇文字檔 (.txt) 上傳，或直接在下方貼上條文</label>
+                    <input type="file" id="custom-law-file" accept=".txt" onchange="handleLawFileSelect(this)" class="w-full text-xs text-slate-500 mb-2">
+                    <textarea id="custom-law-text" class="w-full h-32 p-3 border rounded-lg text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 font-sans" placeholder="請將複製好的最新條文貼於此處..."></textarea>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="custom-law-is-new" class="w-4 h-4 text-blue-600 rounded">
+                    <label for="custom-law-is-new" class="text-xs text-red-600 font-bold">標記為「近3年新修法條」（自動打上亮紅標籤）</label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded">取消</button>
+                <button onclick="confirmCustomLawUpload()" class="px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow-sm">識別並新增卡片</button>
+            </div>
         </div>
     </div>
 
@@ -419,6 +453,67 @@
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             updateViewData();
+        }
+
+        /* 手動上傳/貼上最新法條邏輯 */
+        function openLawUploadModal() {
+            document.getElementById('law-upload-modal').classList.remove('hidden');
+        }
+
+        function closeLawUploadModal() {
+            document.getElementById('law-upload-modal').classList.add('hidden');
+        }
+
+        function handleLawFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('custom-law-text').value = e.target.result;
+                };
+                reader.readAsText(input.files[0]);
+            }
+        }
+
+        function confirmCustomLawUpload() {
+            const title = document.getElementById('custom-law-title').value.trim();
+            const text = document.getElementById('custom-law-text').value.trim();
+            const isNew = document.getElementById('custom-law-is-new').checked;
+
+            if (!title || !text) {
+                alert("請填寫法條標題與內文內容！");
+                return;
+            }
+
+            const newCardId = "law-content-" + Date.now();
+            const cardList = document.getElementById('laws-card-list');
+
+            const borderClass = isNew ? 'border-red-200' : 'border-slate-200';
+            const badgeHTML = isNew ? `<div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-3 py-1 rounded-bl-lg font-bold">3年內新修條文</div>` : '';
+            const titleClass = isNew ? 'text-red-600' : 'text-slate-900';
+
+            const newCardHTML = `
+                <div class="bg-white rounded-xl border ${borderClass} p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
+                    ${badgeHTML}
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-bold ${titleClass}">${title}</h3>
+                        <button onclick="showRelatedLaws('新增法條關聯條文。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
+                            <i class="fa-solid fa-link"></i> 檢視關聯法條 (右側)
+                        </button>
+                    </div>
+                    <div id="${newCardId}" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
+                        ${text}
+                    </div>
+                </div>
+            `;
+
+            cardList.insertAdjacentHTML('beforeend', newCardHTML);
+
+            // 清空框並關閉
+            document.getElementById('custom-law-title').value = "";
+            document.getElementById('custom-law-text').value = "";
+            document.getElementById('custom-law-is-new').checked = false;
+            closeLawUploadModal();
+            alert("最新法條內容已順利識別並呈現在頁面上！");
         }
 
         /* 螢光筆功能 (極簡小框框) */
@@ -643,12 +738,11 @@
         }
     </script>
 
-    <!-- 引入 Firebase SDK 並對接您的專屬專案憑證 -->
+    <!-- Firebase 憑證連線 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-      // 貼入您帶入的專屬專案金鑰
       const firebaseConfig = {
         apiKey: "AIzaSyAe9uqCSGiMoeaa_2NcleMUIfTNhzAjBDo",
         authDomain: "examimindsystem.firebaseapp.com",
@@ -659,14 +753,12 @@
         measurementId: "G-ZE1TPG3L7P"
       };
 
-      // 初始化 Firebase 與 Firestore
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // 1. 儲存螢光筆劃記至 Firebase 雲端資料庫
       window.saveLawHighlights = async function() {
-          const card4 = document.getElementById('law-content-4').innerHTML;
-          const card10 = document.getElementById('law-content-10-1').innerHTML;
+          const card4 = document.getElementById('law-content-4') ? document.getElementById('law-content-4').innerHTML : '';
+          const card10 = document.getElementById('law-content-10-1') ? document.getElementById('law-content-10-1').innerHTML : '';
           
           try {
               await setDoc(doc(db, "law_highlights", "police_laws"), {
@@ -677,25 +769,23 @@
               alert("劃記已成功同步備份至 Firebase 雲端！");
           } catch (error) {
               console.error("雲端儲存失敗：", error);
-              alert("儲存失敗，請確認 Firebase 資料庫 (Firestore) 是否已在 Console 中開啟為測試模式。");
+              alert("儲存失敗，請確認 Firebase 資料庫 (Firestore) 是否已在 Console 中開啟測試模式。");
           }
       };
 
-      // 2. 開啟網頁時，自動從雲端載入劃記
       window.loadLawHighlights = async function() {
           try {
               const docSnap = await getDoc(doc(db, "law_highlights", "police_laws"));
               if (docSnap.exists()) {
                   const data = docSnap.data();
-                  if(data.card4) document.getElementById('law-content-4').innerHTML = data.card4;
-                  if(data.card10) document.getElementById('law-content-10-1').innerHTML = data.card10;
+                  if(data.card4 && document.getElementById('law-content-4')) document.getElementById('law-content-4').innerHTML = data.card4;
+                  if(data.card10 && document.getElementById('law-content-10-1')) document.getElementById('law-content-10-1').innerHTML = data.card10;
               }
           } catch (error) {
               console.error("雲端載入失敗：", error);
           }
       };
 
-      // 網頁載入後自動觸發雲端劃記載入
       window.addEventListener('DOMContentLoaded', () => {
           window.loadLawHighlights();
       });
