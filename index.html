@@ -116,27 +116,37 @@
                             </div>
                         </div>
 
-                        <!-- 預設條文卡片 1 -->
-                        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition">
+                        <!-- 預設條文卡片 1 (已加入刪除按鈕) -->
+                        <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold text-slate-900">第 4 條 (警械使用時機與比例原則)</h3>
-                                <button onclick="showRelatedLaws('111年10月修法劃分，警察人員執行職務時得使用槍械等時機。', ['《警察職權行使法》第 28 條 (危險預防)', '《刑法》第 23 條 (正當防衛)', '《憲法》第 23 條 (比例原則)'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
-                                    <i class="fa-solid fa-link"></i> 檢視關聯法條 (右側)
-                                </button>
+                                <h3 class="text-lg font-bold text-slate-900 pr-12">第 4 條 (警械使用時機與比例原則)</h3>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="showRelatedLaws('111年10月修法劃分，警察人員執行職務時得使用槍械等時機。', ['《警察職權行使法》第 28 條 (危險預防)', '《刑法》第 23 條 (正當防衛)', '《憲法》第 23 條 (比例原則)'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
+                                        <i class="fa-solid fa-link"></i> 檢視關聯法條
+                                    </button>
+                                    <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div id="law-content-4" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
                                 警察人員執行職務時，遇有下列各款情形之一者，得使用警刀或槍械：一、為避免非常變故，維持社會治安時。二、騷動行為足以危害社會治安時。三、依法應逮捕、拘禁之人拒捕、脫逃時...
                             </div>
                         </div>
 
-                        <!-- 預設條文卡片 2 -->
-                        <div class="bg-white rounded-xl border border-red-200 p-6 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-3 py-1 rounded-bl-lg font-bold">3年內新修條文</div>
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold text-red-600">第 10-1 條 (警械使用調查小組)</h3>
-                                <button onclick="showRelatedLaws('第10-1條為111年新增，內政部應設警械使用調查小組。', ['《警察職權行使法》第 31 條 (損失補償)', '《國家賠償法》第 2 條', '《憲法法庭判決》111年憲判字第6號'])" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200 font-medium">
-                                    <i class="fa-solid fa-link"></i> 檢視關聯法條 (右側)
-                                </button>
+                        <!-- 預設條文卡片 2 (已加入刪除按鈕) -->
+                        <div class="law-card bg-white rounded-xl border border-red-200 p-6 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>
+                            <div class="flex justify-between items-start mb-2 pt-1">
+                                <h3 class="text-lg font-bold text-red-600 pr-12">第 10-1 條 (警械使用調查小組)</h3>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="showRelatedLaws('第10-1條為111年新增，內政部應設警械使用調查小組。', ['《警察職權行使法》第 31 條 (損失補償)', '《國家賠償法》第 2 條', '《憲法法庭判決》111年憲判字第6號'])" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200 font-medium">
+                                        <i class="fa-solid fa-link"></i> 檢視關聯法條
+                                    </button>
+                                    <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div id="law-content-10-1" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
                                 內政部應設警械使用調查小組，得主動或依警政署之申請，就警察人員使用警械致人死亡或重傷爭議事件之使用時機、過程及其他相關因素進行調查，並提出調查報告。
@@ -403,7 +413,7 @@
             document.getElementById('exam-select').innerHTML = systemData.exams.map((e, index) => `<option value="${index}">${e.name}</option>`).join('');
         }
 
-        /* 渲染可調整順序的樹狀選單 (包含 ▲ ▼ 按鈕) */
+        /* 渲染選單 */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             let navHTML = '';
@@ -412,7 +422,6 @@
                 navHTML += `<div class="bg-slate-900/80 rounded-lg border border-slate-800 p-2 space-y-2">
                     <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
                         <span class="truncate"><i class="fa-solid fa-folder text-blue-500 mr-1"></i> ${cat.title}</span>
-                        <!-- 主頁面順序微調與新增子頁面按鈕 -->
                         <div class="flex items-center gap-1">
                             <button onclick="moveCategory(${catIdx}, -1)" title="上移主頁面" class="text-slate-500 hover:text-white px-0.5"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
                             <button onclick="moveCategory(${catIdx}, 1)" title="下移主頁面" class="text-slate-500 hover:text-white px-0.5"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
@@ -425,7 +434,6 @@
                     const isSelected = sub.id === activeSubpageId;
                     navHTML += `<li class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs">
                         <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
-                        <!-- 子頁面順序微調與歸屬調整按鈕 -->
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
                             <button onclick="moveSubpage(${catIdx}, ${subIdx}, -1)" title="上移子頁面" class="hover:text-amber-300"><i class="fa-solid fa-caret-up text-[10px]"></i></button>
                             <button onclick="moveSubpage(${catIdx}, ${subIdx}, 1)" title="下移子頁面" class="hover:text-amber-300"><i class="fa-solid fa-caret-down text-[10px]"></i></button>
@@ -449,7 +457,17 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        /* 順序微調函數 */
+        /* 刪除條文卡片功能 */
+        function deleteLawCard(btnElement) {
+            if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「雲端儲存劃記」保存）")) {
+                const card = btnElement.closest('.law-card, .bg-white');
+                if (card) {
+                    card.remove();
+                }
+            }
+        }
+
+        /* 順序微調 */
         function moveCategory(index, direction) {
             const categories = systemData.exams[currentExamIndex].categories;
             const targetIndex = index + direction;
@@ -514,17 +532,22 @@
                 count++;
                 const newCardId = "law-content-" + Date.now() + "-" + count;
                 const borderClass = isNew ? 'border-red-200' : 'border-slate-200';
-                const badgeHTML = isNew ? `<div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-3 py-1 rounded-bl-lg font-bold">3年內新修條文</div>` : '';
+                const badgeHTML = isNew ? `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>` : '';
                 const titleClass = isNew ? 'text-red-600' : 'text-slate-900';
 
                 const newCardHTML = `
-                    <div class="bg-white rounded-xl border ${borderClass} p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
+                    <div class="law-card bg-white rounded-xl border ${borderClass} p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
                         ${badgeHTML}
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-lg font-bold ${titleClass}">${item.title}</h3>
-                            <button onclick="showRelatedLaws('解析匯入法條。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
-                                <i class="fa-solid fa-link"></i> 檢視關聯法條 (右側)
-                            </button>
+                        <div class="flex justify-between items-start mb-2 pt-1">
+                            <h3 class="text-lg font-bold ${titleClass} pr-12">${item.title}</h3>
+                            <div class="flex items-center gap-2">
+                                <button onclick="showRelatedLaws('解析匯入法條。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
+                                    <i class="fa-solid fa-link"></i> 檢視關聯法條
+                                </button>
+                                <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="${newCardId}" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
                             ${item.content || '無內文'}
@@ -794,7 +817,7 @@
           }
       };
 
-      /* 2. 儲存劃記至雲端 */
+      /* 2. 儲存劃記與法條卡片清單至雲端 */
       window.saveLawHighlights = async function() {
           const cardListHTML = document.getElementById('laws-card-list').innerHTML;
           try {
@@ -802,7 +825,7 @@
                   fullListHTML: cardListHTML,
                   updatedAt: new Date()
               });
-              alert("劃記已成功同步備份至 Firebase 雲端！");
+              alert("法條卡片與劃記狀態已成功同步備份至 Firebase 雲端！");
           } catch (error) {
               console.error("雲端儲存失敗：", error);
               alert("儲存劃記失敗，請確認 Firebase 資料庫狀態。");
@@ -818,7 +841,7 @@
                   systemData = structSnap.data().systemData;
                   updateViewData();
               }
-              // 載入劃記
+              // 載入劃記與最新卡片狀態
               const docSnap = await getDoc(doc(db, "law_highlights", "police_laws"));
               if (docSnap.exists()) {
                   const data = docSnap.data();
