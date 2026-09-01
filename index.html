@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (雲端全同步修復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (拖曳排序版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- 引入 SortableJS 拖曳排序庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
@@ -32,6 +34,10 @@
         }
         .chapter-header::before { margin-right: 12px; }
         .chapter-header::after { margin-left: 12px; }
+
+        /* 拖曳時的視覺效果 */
+        .sortable-ghost { opacity: 0.4; background-color: #f1f5f9 !important; border: 2px dashed #3b82f6 !important; }
+        .sortable-drag { cursor: grabbing; }
 
         html { scroll-behavior: smooth; }
     </style>
@@ -144,6 +150,7 @@
                             </div>
 
                             <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-400 flex items-center gap-1 mr-2"><i class="fa-solid fa-up-down-left-right"></i> 可拖曳卡片或左側欄位排序</span>
                                 <button onclick="toggleBatchSelectMode()" id="btn-batch-toggle" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded transition border font-medium flex items-center gap-1">
                                     <i class="fa-regular fa-square-check"></i> 批量刪除管理
                                 </button>
@@ -160,7 +167,8 @@
                             </div>
                         </div>
 
-                        <div id="laws-container-inner" class="space-y-4"></div>
+                        <!-- 容器：套用拖曳排序功能 -->
+                        <div id="laws-container-inner" class="space-y-4 min-h-[300px]"></div>
                     </div>
 
                     <aside class="w-56 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs">
@@ -259,6 +267,9 @@
         let editingSubId = null;
         let isBatchSelectMode = false;
 
+        let cardSortable = null;
+        let sidebarSortable = null;
+
         function saveToLocalFallback() {
             try {
                 localStorage.setItem("em_backup_systemData", JSON.stringify(systemData));
@@ -275,7 +286,7 @@
             } catch(e) {}
         }
 
-        /* 【即時同步與分流儲存】 */
+        /* 儲存並同步至雲端 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             saveToLocalFallback();
@@ -290,14 +301,12 @@
             }
 
             try {
-                // 1. 儲存全站結構
                 await db.collection('exam_data').doc('system_structure').set({
                     systemData: systemData,
                     lastUpdatedPage: activeSubpageId,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
 
-                // 2. 儲存當前頁面資料
                 if (activeSubpageId && allLawsMap[activeSubpageId]) {
                     await db.collection('exam_pages').doc(activeSubpageId).set({
                         htmlContent: allLawsMap[activeSubpageId],
@@ -306,7 +315,7 @@
                 }
 
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
-                if (showAlert) alert("🎉 資料已成功同步至雲端！其他開啟的裝置畫面會自動更新。");
+                if (showAlert) alert("🎉 資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
@@ -331,6 +340,83 @@
             } catch(e) {}
         }
 
+        /* 初始化拖曳 SortableJS */
+        function initDragAndDrop() {
+            // 1. 卡片與章節標題拖曳
+            const cardsContainer = document.getElementById('laws-container-inner');
+            if (cardsContainer) {
+                if (cardSortable) cardSortable.destroy();
+                cardSortable = Sortable.create(cardsContainer, {
+                    animation: 150,
+                    handle: '.drag-handle, .law-card, .chapter-header', // 拖曳手把或整個卡片
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() {
+                        syncCurrentPageDOM();
+                        refreshQuickIndex();
+                        saveAllToStorage(false);
+                    }
+                });
+            }
+
+            // 2. 左側主頁面分類拖曳
+            const sidebarNav = document.getElementById('sidebar-nav');
+            if (sidebarNav) {
+                if (sidebarSortable) sidebarSortable.destroy();
+                sidebarSortable = Sortable.create(sidebarNav, {
+                    animation: 150,
+                    handle: '.cat-drag-handle',
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() {
+                        reorderCategoriesFromDOM();
+                    }
+                });
+            }
+
+            // 3. 左側子頁面跨分類拖曳
+            document.querySelectorAll('.subpage-list').forEach(listEl => {
+                Sortable.create(listEl, {
+                    group: 'subpages-group',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() {
+                        reorderCategoriesFromDOM();
+                    }
+                });
+            });
+        }
+
+        /* 根據 DOM 拖曳後的結果重組 systemData 資料結構 */
+        function reorderCategoriesFromDOM() {
+            const currentExam = systemData.exams[currentExamIndex];
+            if (!currentExam) return;
+
+            let newCategories = [];
+            const catBlocks = document.querySelectorAll('.cat-block');
+
+            catBlocks.forEach(catBlock => {
+                const catId = catBlock.getAttribute('data-cat-id');
+                const oldCat = currentExam.categories.find(c => c.id === catId);
+                if (!oldCat) return;
+
+                let newSubpages = [];
+                const subItems = catBlock.querySelectorAll('li[data-sub-id]');
+                subItems.forEach(subItem => {
+                    const subId = subItem.getAttribute('data-sub-id');
+                    const subTitle = subItem.getAttribute('data-sub-title');
+                    newSubpages.push({ id: subId, title: subTitle });
+                });
+
+                newCategories.push({
+                    id: oldCat.id,
+                    title: oldCat.title,
+                    subpages: newSubpages
+                });
+            });
+
+            currentExam.categories = newCategories;
+            saveAllToStorage(false);
+        }
+
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
@@ -341,7 +427,6 @@
                     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                     db = firebase.firestore();
 
-                    // 即時廣播監聽：當有任一裝置修改資料時，全裝置立刻自動重新載入最新頁面
                     db.collection('exam_data').doc('system_structure').onSnapshot(async doc => {
                         if (doc.exists && doc.data().systemData) {
                             systemData = doc.data().systemData;
@@ -356,6 +441,7 @@
                                 if (container && allLawsMap[activeSubpageId]) {
                                     container.innerHTML = allLawsMap[activeSubpageId];
                                     refreshQuickIndex();
+                                    initDragAndDrop();
                                 }
                             }
                         }
@@ -436,26 +522,30 @@
             }
         }
 
+        /* 渲染左側樹狀選單（加入拖曳節點元素與 data 屬性） */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             if (!currentExam) return;
             let navHTML = '';
             
             currentExam.categories.forEach((cat, catIdx) => {
-                navHTML += `<div class="bg-slate-900/80 rounded-lg border border-slate-800 p-2 space-y-2">
+                navHTML += `<div class="cat-block bg-slate-900/80 rounded-lg border border-slate-800 p-2 space-y-2" data-cat-id="${cat.id}">
                     <div class="group flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
-                        <span class="truncate"><i class="fa-solid fa-folder text-blue-500 mr-1"></i> ${cat.title}</span>
+                        <span class="truncate flex items-center gap-1.5 cursor-grab cat-drag-handle" title="按住可拖曳主頁面順序">
+                            <i class="fa-solid fa-grip-vertical text-slate-600"></i>
+                            <i class="fa-solid fa-folder text-blue-500 mr-0.5"></i> ${cat.title}
+                        </span>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
                             <button onclick="editCategoryName(${catIdx})" title="編輯主頁面名稱" class="hover:text-blue-400 px-0.5"><i class="fa-solid fa-pen text-[10px]"></i></button>
                             <button onclick="deleteCategory(${catIdx})" title="刪除主頁面" class="hover:text-red-400 px-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             <button onclick="openMoveSubModal('${cat.id}')" title="在此新增子頁面" class="hover:text-green-400 px-0.5 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
-                    <ul class="space-y-1 pl-2 border-l border-slate-700">`;
+                    <ul class="subpage-list space-y-1 pl-2 border-l border-slate-700 min-h-[10px]">`;
                 
                 cat.subpages.forEach((sub, subIdx) => {
                     const isSelected = sub.id === activeSubpageId;
-                    navHTML += `<li class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs">
+                    navHTML += `<li data-sub-id="${sub.id}" data-sub-title="${sub.title}" class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs cursor-grab">
                         <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
                             <button onclick="editSubpageName(${catIdx}, ${subIdx})" title="修改名稱" class="hover:text-amber-300"><i class="fa-solid fa-pen text-[10px]"></i></button>
@@ -466,6 +556,7 @@
                 navHTML += `</ul></div>`;
             });
             document.getElementById('sidebar-nav').innerHTML = navHTML || `<div class="text-slate-500 text-xs text-center py-4">無科目資料，請點擊上方按鈕新增</div>`;
+            initDragAndDrop();
         }
 
         async function selectSubpage(subId, title, shouldSync = true) {
@@ -487,15 +578,16 @@
 
             refreshQuickIndex();
             updateViewData();
+            initDragAndDrop();
             if(shouldSync) saveAllToStorage(false);
         }
 
-        /* 完整的卡片 HTML 生成器（含相關連結與爭點區塊） */
         function getLawCardHTML(title, bodyText) {
             return `
                 <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
                     <div class="flex justify-between items-start pt-1">
                         <div class="flex items-center gap-2">
+                            <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5" title="點擊按住可拖曳此卡片上下移動"><i class="fa-solid fa-grip-vertical"></i></span>
                             <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
                             <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
                         </div>
@@ -516,7 +608,6 @@
                         </div>
                     </div>
 
-                    <!-- 補回：相關連結與爭點註記區塊 -->
                     <div class="law-links-section mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
                         <div class="flex items-center justify-between font-semibold text-slate-500">
                             <span class="flex items-center gap-1"><i class="fa-solid fa-link text-blue-500"></i> 相關連結與爭點補充：</span>
@@ -596,13 +687,15 @@
         function addNewChapterHeader() {
             const container = document.getElementById('laws-container-inner');
             const chapterHTML = `
-                <div class="chapter-header group">
+                <div class="chapter-header group cursor-grab">
+                    <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
                     <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">第一章 總則 (點此編輯章節名稱)</span>
                     <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             `;
             container.insertAdjacentHTML('afterbegin', chapterHTML);
             refreshQuickIndex();
+            initDragAndDrop();
             saveAllToStorage(false);
         }
 
@@ -650,7 +743,8 @@
             parsedElements.forEach(elem => {
                 if (elem.type === 'chapter') {
                     const chapHTML = `
-                        <div class="chapter-header group">
+                        <div class="chapter-header group cursor-grab">
+                            <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
                             <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
                             <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                         </div>
@@ -667,6 +761,7 @@
             document.getElementById('custom-law-text').value = "";
             closeLawUploadModal();
             refreshQuickIndex();
+            initDragAndDrop();
             saveAllToStorage(true);
         }
 
@@ -674,6 +769,7 @@
             const container = document.getElementById('laws-container-inner');
             container.insertAdjacentHTML('afterbegin', getLawCardHTML("第 X 條 (點此修改條號與主題)", "第 1 項：點擊此處輸入項內容..."));
             refreshQuickIndex();
+            initDragAndDrop();
             saveAllToStorage(false);
         }
 
