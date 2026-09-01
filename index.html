@@ -59,8 +59,10 @@
         <main class="flex-1 flex flex-col bg-slate-50 overflow-y-auto" id="main-container">
             
             <!-- 【前台學習視圖】 -->
-            <div id="student-view" class="flex-1 flex flex-col">
-                <header class="bg-white border-b border-slate-200 px-6 pt-4 pb-0 shadow-sm">
+            <div id="student-view" class="flex-1 flex flex-col relative">
+                
+                <!-- 【固定置頂區】頁面標題與四大 Tab 分頁 -->
+                <header class="bg-white border-b border-slate-200 px-6 pt-4 pb-0 shadow-sm sticky top-0 z-20">
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
@@ -98,27 +100,37 @@
                 <div id="content-tab-law" class="p-6 tab-content flex gap-6">
                     <div class="flex-1 space-y-6" id="laws-card-list">
                         
-                        <!-- 極簡螢光筆工具列 -->
-                        <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between sticky top-0 z-10">
-                            <div class="text-xs text-slate-500 font-medium flex items-center gap-2">
-                                <i class="fa-solid fa-highlighter text-amber-500"></i> 框選文字劃記：
-                            </div>
+                        <!-- 極簡螢光筆與批量管理工具列 (二級懸浮置頂) -->
+                        <div class="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md flex items-center justify-between sticky top-[108px] z-10 flex-wrap gap-2">
                             <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                    <i class="fa-solid fa-highlighter text-amber-500"></i> 劃記：
+                                </span>
                                 <button onclick="applyHighlight('yellow')" title="標記黃色重點" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('green')" title="標記綠色重點" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('pink')" title="標記粉色重點" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
                                 
                                 <div class="h-4 w-px bg-slate-200 mx-1"></div>
                                 
-                                <button onclick="changeHighlightColor('yellow')" title="將選取區改為黃色" class="w-6 h-6 rounded bg-yellow-200 border-2 border-dashed border-yellow-500 hover:scale-110 transition"></button>
-                                <button onclick="changeHighlightColor('green')" title="將選取區改為綠色" class="w-6 h-6 rounded bg-green-200 border-2 border-dashed border-green-500 hover:scale-110 transition"></button>
-                                <button onclick="changeHighlightColor('pink')" title="將選取區改為粉色" class="w-6 h-6 rounded bg-pink-200 border-2 border-dashed border-pink-500 hover:scale-110 transition"></button>
-
-                                <div class="h-4 w-px bg-slate-200 mx-1"></div>
-
                                 <button onclick="removeHighlight()" title="取消螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
+                            </div>
+
+                            <!-- 批量刪除管理區 -->
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleBatchSelectMode()" id="btn-batch-toggle" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded transition border font-medium flex items-center gap-1">
+                                    <i class="fa-regular fa-square-check"></i> 批量選擇 (全選刪除)
+                                </button>
+                                
+                                <div id="batch-actions" class="hidden items-center gap-2">
+                                    <button onclick="selectAllCards(true)" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-2.5 py-1 rounded border border-blue-200 font-medium">全選</button>
+                                    <button onclick="selectAllCards(false)" class="text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 px-2.5 py-1 rounded border border-slate-200 font-medium">取消全選</button>
+                                    <button onclick="deleteSelectedCards()" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition font-bold flex items-center gap-1 shadow-sm">
+                                        <i class="fa-solid fa-trash-can"></i> 刪除選取卡片
+                                    </button>
+                                </div>
+
                                 <button onclick="saveAllToStorage(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
                                     <i class="fa-solid fa-floppy-disk"></i> 儲存本頁法條與劃記
                                 </button>
@@ -132,7 +144,7 @@
                     </div>
 
                     <!-- 右側關聯法條面板 -->
-                    <aside class="w-80 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
+                    <aside class="w-80 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-[108px]">
                         <div class="border-b pb-3 flex items-center gap-2 text-slate-900 font-bold">
                             <i class="fa-solid fa-network-wired text-blue-600"></i>
                             <span>關聯法條與實務判決</span>
@@ -375,6 +387,7 @@
         let activeSubpageId = "sub_1";
         let modalMode = "";
         let editingSubId = null;
+        let isBatchSelectMode = false;
 
         /* 本地自動儲存核心函數 */
         function saveAllToStorage(showAlert = false) {
@@ -487,7 +500,10 @@
                 container.innerHTML = `
                     <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">《${title}》標題 (點擊可修改)</h3>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="card-select-checkbox hidden w-4 h-4 text-blue-600 rounded">
+                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">《${title}》標題 (點擊可修改)</h3>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
                                     <i class="fa-solid fa-flag"></i> 新修法
@@ -510,13 +526,59 @@
             saveAllToStorage(false);
         }
 
+        /* 批量選取與刪除模式控制 */
+        function toggleBatchSelectMode() {
+            isBatchSelectMode = !isBatchSelectMode;
+            const checkboxes = document.querySelectorAll('.card-select-checkbox');
+            const batchActions = document.getElementById('batch-actions');
+            
+            checkboxes.forEach(cb => {
+                if (isBatchSelectMode) {
+                    cb.classList.remove('hidden');
+                } else {
+                    cb.classList.add('hidden');
+                    cb.checked = false;
+                }
+            });
+
+            if (isBatchSelectMode) {
+                batchActions.classList.remove('hidden');
+                batchActions.classList.add('flex');
+            } else {
+                batchActions.classList.add('hidden');
+                batchActions.classList.remove('flex');
+            }
+        }
+
+        function selectAllCards(selectStatus) {
+            const checkboxes = document.querySelectorAll('.card-select-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectStatus);
+        }
+
+        function deleteSelectedCards() {
+            const checkedBoxes = document.querySelectorAll('.card-select-checkbox:checked');
+            if (checkedBoxes.length === 0) return alert("請先勾選要刪除的卡片！");
+
+            if (confirm(`確定要刪除選取的 ${checkedBoxes.length} 張卡片嗎？`)) {
+                checkedBoxes.forEach(cb => {
+                    const card = cb.closest('.law-card');
+                    if (card) card.remove();
+                });
+                saveAllToStorage(false);
+                alert("已成功刪除選取的卡片！");
+            }
+        }
+
         /* 手動新增一張空白卡片（包含項、款範本與獨立增加按鈕） */
         function addNewBlankLawCard() {
             const container = document.getElementById('laws-container-inner');
             const newCardHTML = `
                 <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
                     <div class="flex justify-between items-start pt-1">
-                        <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">第 X 條 (點此修改條號與主題)</h3>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">第 X 條 (點此修改條號與主題)</h3>
+                        </div>
                         <div class="flex items-center gap-2">
                             <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
                                 <i class="fa-solid fa-flag"></i> 新修法
@@ -531,7 +593,6 @@
                         <div class="law-item-section" contenteditable="true">第 1 項：點擊此處輸入項內容...</div>
                     </div>
 
-                    <!-- 階層快捷控制按鈕 -->
                     <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
                         <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1">
                             <i class="fa-solid fa-plus text-blue-500"></i> 新增「項」
@@ -575,7 +636,6 @@
                 const trimmed = line.trim();
                 if (!trimmed) return;
 
-                // 判斷是否為「條」
                 const isArticleHeader = /^第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*條/.test(trimmed);
 
                 if (isArticleHeader) {
@@ -586,7 +646,6 @@
                         currentArticle = { title: "匯入法條內容", items: [] };
                     }
                     
-                    // 判斷是否為「款」（如：一、二、或 (一)、(1)）
                     const isSubItem = /^([\u4e00-\u4e5d一二三四五六七八九十]+\s*[\u3001\u002e]|[\uff08\u0028][\u4e00-\u4e5d一二三四五六七八九十0-9]+[\uff09\u0029])/.test(trimmed);
 
                     currentArticle.items.push({
@@ -614,7 +673,10 @@
                 const cardHTML = `
                     <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
                         <div class="flex justify-between items-start pt-1">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">${art.title}</h3>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
+                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">${art.title}</h3>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
                                     <i class="fa-solid fa-flag"></i> 新修法
@@ -745,18 +807,6 @@
                 }
             });
             selection.removeAllRanges();
-            saveAllToStorage(false);
-        }
-
-        function changeHighlightColor(newColor) {
-            const selection = window.getSelection();
-            if (!selection.rangeCount || selection.isCollapsed) return alert("請框選螢光文字以更換顏色！");
-            const range = selection.getRangeAt(0);
-            const container = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentNode;
-            const highlightedSpans = container.querySelectorAll('span[class^="highlight-"]');
-            highlightedSpans.forEach(span => {
-                if (selection.containsNode(span, true)) span.className = "highlight-" + newColor;
-            });
             saveAllToStorage(false);
         }
 
