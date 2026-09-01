@@ -10,6 +10,10 @@
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
         .highlight-pink { background-color: #fbcfe8; padding: 2px 4px; border-radius: 4px; }
+        
+        /* 條項款階層樣式 */
+        .law-item-section { margin-top: 8px; padding-left: 8px; border-left: 2px solid #e2e8f0; }
+        .law-subitem-section { margin-top: 4px; padding-left: 20px; color: #334155; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans">
@@ -63,9 +67,14 @@
                                 <span id="current-sublaw-title">警械使用條例</span>
                             </h1>
                         </div>
-                        <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> 上傳/匯入本頁面法規全文
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="addNewBlankLawCard()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus text-green-400"></i> 手動新增空白卡片
+                            </button>
+                            <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> 上傳/匯入本頁面法規全文
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 四大獨立子頁面 Tab -->
@@ -298,12 +307,12 @@
     <div id="law-upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-[580px] p-6 border border-slate-200 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條號與條文)</h3>
+                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條、項、款)</h3>
                 <button onclick="closeLawUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="space-y-3">
-                <p class="text-xs text-slate-500">將<b>整篇法規全文</b>一次貼入，系統將自動解析條號、切割卡片並呈現於當前開啟的科目頁面。</p>
+                <p class="text-xs text-slate-500">將<b>整篇法規全文</b>一次貼入，系統將自動精準識別「條、項、款」階層並切割呈現。</p>
 
                 <div>
                     <label class="text-xs font-bold text-slate-700 block mb-1">上傳法規全文檔 (.txt)</label>
@@ -312,14 +321,14 @@
 
                 <div>
                     <label class="text-xs font-bold text-slate-700 block mb-1">或直接貼上法規全文內容：</label>
-                    <textarea id="custom-law-text" class="w-full h-48 p-3 border rounded-lg text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 font-sans" placeholder="例如：&#10;第 1 條 為維護治安...&#10;第 2 條 警察發布命令..."></textarea>
+                    <textarea id="custom-law-text" class="w-full h-48 p-3 border rounded-lg text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 font-sans" placeholder="例如：&#10;第 4 條 警察人員執行職務時...&#10;一、為避免非常變故...&#10;二、騷動行為..."></textarea>
                 </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded">取消</button>
                 <button onclick="parseAndBatchCreateLaws()" class="px-5 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow-sm flex items-center gap-1">
-                    <i class="fa-solid fa-bolt"></i> 自動辨識並批次生成卡片
+                    <i class="fa-solid fa-bolt"></i> 自動辨識階層並批次生成
                 </button>
             </div>
         </div>
@@ -378,7 +387,7 @@
                 localStorage.setItem("em_systemData", JSON.stringify(systemData));
                 localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
                 localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
-                if (showAlert) alert("🎉 已成功將所有異動與劃記永久儲存！");
+                if (showAlert) alert("🎉 已成功儲存所有階層條文與劃記變更！");
             } catch (e) {
                 console.error("儲存失敗：", e);
             }
@@ -478,13 +487,19 @@
                 container.innerHTML = `
                     <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-lg font-bold text-slate-900">《${title}》尚未匯入條文</h3>
-                            <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">《${title}》標題 (點擊可修改)</h3>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
+                                    <i class="fa-solid fa-flag"></i> 新修法
+                                </button>
+                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="text-sm leading-relaxed text-slate-500 p-2">
-                            請點擊右上角「上傳/匯入本頁面法規全文」按鈕，將《${title}》的條文內容一次貼入。
+                        <div class="law-card-content space-y-2 text-sm text-slate-800">
+                            <div class="law-item-section" contenteditable="true">第 1 項內容：點擊此處編輯項文字...</div>
+                            <div class="law-subitem-section" contenteditable="true">（一）第 1 款內容：點擊此處編輯款文字...</div>
                         </div>
                     </div>
                 `;
@@ -492,7 +507,145 @@
 
             renderNoteCards();
             updateViewData();
-            saveAllToStorage(false); // 切換頁面時自動背景存檔
+            saveAllToStorage(false);
+        }
+
+        /* 手動新增一張空白卡片（包含項、款範本與獨立增加按鈕） */
+        function addNewBlankLawCard() {
+            const container = document.getElementById('laws-container-inner');
+            const newCardHTML = `
+                <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                    <div class="flex justify-between items-start pt-1">
+                        <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">第 X 條 (點此修改條號與主題)</h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
+                                <i class="fa-solid fa-flag"></i> 新修法
+                            </button>
+                            <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="law-card-content space-y-2 text-sm text-slate-800">
+                        <div class="law-item-section" contenteditable="true">第 1 項：點擊此處輸入項內容...</div>
+                    </div>
+
+                    <!-- 階層快捷控制按鈕 -->
+                    <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
+                        <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-blue-500"></i> 新增「項」
+                        </button>
+                        <button onclick="addSectionToCard(this, 'subitem')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-green-500"></i> 新增「款」
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', newCardHTML);
+            saveAllToStorage(false);
+        }
+
+        /* 為現有卡片手動動態增加「項」或「款」區塊 */
+        function addSectionToCard(btn, type) {
+            const card = btn.closest('.law-card');
+            const contentBox = card.querySelector('.law-card-content');
+            if (!contentBox) return;
+
+            if (type === 'item') {
+                const itemHTML = `<div class="law-item-section" contenteditable="true">新項：請點擊輸入內容...</div>`;
+                contentBox.insertAdjacentHTML('beforeend', itemHTML);
+            } else if (type === 'subitem') {
+                const subitemHTML = `<div class="law-subitem-section" contenteditable="true">一、新款：請點擊輸入內容...</div>`;
+                contentBox.insertAdjacentHTML('beforeend', subitemHTML);
+            }
+            saveAllToStorage(false);
+        }
+
+        /* 解析匯入全文：自動識別「條、項、款」階層 */
+        function parseAndBatchCreateLaws() {
+            const rawText = document.getElementById('custom-law-text').value.trim();
+            if (!rawText) return alert("請貼上法規全文或上傳檔案！");
+
+            const lines = rawText.split('\n');
+            let articles = [];
+            let currentArticle = null;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // 判斷是否為「條」
+                const isArticleHeader = /^第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*條/.test(trimmed);
+
+                if (isArticleHeader) {
+                    if (currentArticle) articles.push(currentArticle);
+                    currentArticle = { title: trimmed, items: [] };
+                } else {
+                    if (!currentArticle) {
+                        currentArticle = { title: "匯入法條內容", items: [] };
+                    }
+                    
+                    // 判斷是否為「款」（如：一、二、或 (一)、(1)）
+                    const isSubItem = /^([\u4e00-\u4e5d一二三四五六七八九十]+\s*[\u3001\u002e]|[\uff08\u0028][\u4e00-\u4e5d一二三四五六七八九十0-9]+[\uff09\u0029])/.test(trimmed);
+
+                    currentArticle.items.push({
+                        text: trimmed,
+                        type: isSubItem ? 'subitem' : 'item'
+                    });
+                }
+            });
+            if (currentArticle) articles.push(currentArticle);
+
+            const container = document.getElementById('laws-container-inner');
+            container.innerHTML = "";
+
+            articles.forEach(art => {
+                let itemsHTML = '';
+                if (art.items.length === 0) {
+                    itemsHTML = `<div class="law-item-section" contenteditable="true">無內文</div>`;
+                } else {
+                    art.items.forEach(it => {
+                        const cssClass = it.type === 'subitem' ? 'law-subitem-section' : 'law-item-section';
+                        itemsHTML += `<div class="${cssClass}" contenteditable="true">${it.text}</div>`;
+                    });
+                }
+
+                const cardHTML = `
+                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                        <div class="flex justify-between items-start pt-1">
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">${art.title}</h3>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
+                                    <i class="fa-solid fa-flag"></i> 新修法
+                                </button>
+                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
+                            ${itemsHTML}
+                        </div>
+
+                        <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
+                            <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-blue-500"></i> 新增「項」
+                            </button>
+                            <button onclick="addSectionToCard(this, 'subitem')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-green-500"></i> 新增「款」
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+
+            allLawsMap[activeSubpageId] = container.innerHTML;
+            document.getElementById('custom-law-text').value = "";
+            closeLawUploadModal();
+            saveAllToStorage(true);
         }
 
         function toggleSingleNewLawBadge(btnElement) {
@@ -566,62 +719,6 @@
             }
         }
 
-        function parseAndBatchCreateLaws() {
-            const rawText = document.getElementById('custom-law-text').value.trim();
-            if (!rawText) return alert("請貼上法規全文或上傳檔案！");
-
-            const articleRegex = /(第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*條[^\n]*)/g;
-            const parts = rawText.split(articleRegex);
-            let parsedArticles = [];
-
-            if (parts.length <= 1) {
-                parsedArticles.push({ title: "匯入條文內容", content: rawText });
-            } else {
-                for (let i = 1; i < parts.length; i += 2) {
-                    const title = parts[i].trim();
-                    const content = parts[i + 1] ? parts[i + 1].trim() : "";
-                    if (title) parsedArticles.push({ title, content });
-                }
-            }
-
-            const container = document.getElementById('laws-container-inner');
-            container.innerHTML = "";
-
-            let count = 0;
-            parsedArticles.forEach(item => {
-                count++;
-                const newCardId = "law-content-" + Date.now() + "-" + count;
-
-                const newCardHTML = `
-                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-2 pt-1">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12">${item.title}</h3>
-                            <div class="flex items-center gap-2">
-                                <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
-                                    <i class="fa-solid fa-flag"></i> 新修法
-                                </button>
-                                <button onclick="showRelatedLaws('解析匯入法條。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
-                                    <i class="fa-solid fa-link"></i> 檢視關聯法條
-                                </button>
-                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="${newCardId}" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
-                            ${item.content || '無內文'}
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', newCardHTML);
-            });
-
-            allLawsMap[activeSubpageId] = container.innerHTML;
-            document.getElementById('custom-law-text').value = "";
-            closeLawUploadModal();
-            saveAllToStorage(true);
-        }
-
         function applyHighlight(color) {
             const selection = window.getSelection();
             if (!selection.rangeCount || selection.isCollapsed) return alert("請先用滑鼠框選法條文字！");
@@ -671,13 +768,13 @@
             container.innerHTML = currentSubNotes.map(card => `
                 <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 hover:border-blue-300 transition">
                     <div class="flex justify-between items-start">
-                        <h4 class="font-bold text-slate-900 text-base">${card.title}</h4>
+                        <h4 class="font-bold text-slate-900 text-base" contenteditable="true" onblur="updateCardTitle('${card.id}', this.innerText)">${card.title}</h4>
                         <button onclick="deleteCard('${card.id}')" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     <div class="flex flex-wrap gap-1.5 pt-1">
                         ${card.files.map(f => `<span class="bg-blue-50 text-blue-700 text-[11px] font-medium px-2 py-0.5 rounded border border-blue-100"><i class="fa-solid fa-paperclip text-[9px]"></i> ${f}</span>`).join('')}
                     </div>
-                    <textarea onchange="updateCardContent('${card.id}', this.value)" class="w-full h-32 p-3 border rounded-lg text-xs leading-relaxed text-slate-700 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500">${card.content}</textarea>
+                    <textarea oninput="updateCardContent('${card.id}', this.value)" class="w-full h-32 p-3 border rounded-lg text-xs leading-relaxed text-slate-700 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500">${card.content}</textarea>
                 </div>
             `).join('');
 
@@ -707,6 +804,15 @@
             fileInput.value = "";
             renderNoteCards();
             saveAllToStorage(true);
+        }
+
+        function updateCardTitle(cardId, newTitle) {
+            const currentSubNotes = allNotesMap[activeSubpageId] || [];
+            const card = currentSubNotes.find(c => c.id === cardId);
+            if (card) {
+                card.title = newTitle;
+                saveAllToStorage(false);
+            }
         }
 
         function updateCardContent(cardId, newText) {
@@ -751,14 +857,6 @@
 
         function toggleCorrection() {
             document.getElementById('correction-area').classList.toggle('hidden');
-        }
-
-        function showRelatedLaws(summary, lawsList) {
-            const container = document.getElementById('related-laws-container');
-            let html = `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 font-medium mb-3">${summary}</div>`;
-            html += `<div class="space-y-2"><div class="font-bold text-slate-700">關聯條文與判決：</div>`;
-            lawsList.forEach(law => html += `<div class="p-2.5 bg-slate-50 border rounded-lg text-slate-800 flex items-center justify-between"><span>${law}</span><i class="fa-solid fa-arrow-up-right-from-square text-blue-500 text-[10px]"></i></div>`);
-            container.innerHTML = html + `</div>`;
         }
 
         function switchTab(tabId) {
