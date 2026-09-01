@@ -42,7 +42,7 @@
                 
                 <!-- 【全站防流失總儲存按鈕】 -->
                 <button onclick="window.saveAllSystemData()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存全站所有輸入、變更與劃記
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存全站所有輸入與架構
                 </button>
             </div>
 
@@ -65,7 +65,7 @@
                             </h1>
                         </div>
                         <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> 上傳/匯入全篇法規自動解析
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 上傳/匯入本頁面法規全文
                         </button>
                     </div>
 
@@ -112,45 +112,21 @@
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
                                 <button onclick="window.saveAllSystemData()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
-                                    <i class="fa-solid fa-floppy-disk"></i> 儲存劃記與法條
+                                    <i class="fa-solid fa-floppy-disk"></i> 儲存本頁法條與劃記
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 預設條文卡片 1 -->
-                        <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative">
+                        <!-- 預設提示卡片（若本頁面尚未匯入條文） -->
+                        <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold text-slate-900 pr-12">第 4 條 (警械使用時機與比例原則)</h3>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="showRelatedLaws('111年10月修法劃分，警察人員執行職務時得使用槍械等時機。', ['《警察職權行使法》第 28 條 (危險預防)', '《刑法》第 23 條 (正當防衛)', '《憲法》第 23 條 (比例原則)'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
-                                        <i class="fa-solid fa-link"></i> 檢視關聯法條
-                                    </button>
-                                    <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </div>
+                                <h3 class="text-lg font-bold text-slate-900">尚未匯入條文</h3>
+                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
-                            <div id="law-content-4" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
-                                警察人員執行職務時，遇有下列各款情形之一者，得使用警刀或槍械：一、為避免非常變故，維持社會治安時。二、騷動行為足以危害社會治安時。三、依法應逮捕、拘禁之人拒捕、脫逃時...
-                            </div>
-                        </div>
-
-                        <!-- 預設條文卡片 2 -->
-                        <div class="law-card bg-white rounded-xl border border-red-200 p-6 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>
-                            <div class="flex justify-between items-start mb-2 pt-1">
-                                <h3 class="text-lg font-bold text-red-600 pr-12">第 10-1 條 (警械使用調查小組)</h3>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="showRelatedLaws('第10-1條為111年新增，內政部應設警械使用調查小組。', ['《警察職權行使法》第 31 條 (損失補償)', '《國家賠償法》第 2 條', '《憲法法庭判決》111年憲判字第6號'])" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200 font-medium">
-                                        <i class="fa-solid fa-link"></i> 檢視關聯法條
-                                    </button>
-                                    <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="law-content-10-1" class="text-sm leading-relaxed text-slate-800 p-2 rounded hover:bg-slate-50 transition" contenteditable="true">
-                                內政部應設警械使用調查小組，得主動或依警政署之申請，就警察人員使用警械致人死亡或重傷爭議事件之使用時機、過程及其他相關因素進行調查，並提出調查報告。
+                            <div class="text-sm leading-relaxed text-slate-500 p-2">
+                                請點擊右上角「上傳/匯入本頁面法規全文」按鈕，貼入此科目的條文內容。
                             </div>
                         </div>
 
@@ -182,7 +158,7 @@
                             </div>
                             <div class="bg-slate-900 text-green-400 p-4 rounded-lg text-xs font-mono h-36 overflow-y-auto">
                                 [OCR 辨識結果預覽]:<br>
-                                > 警械條例第4條比例原則要件...
+                                > 比例原則與裁量要件...
                             </div>
                         </div>
                     </div>
@@ -207,7 +183,7 @@
                             </div>
                             <div>
                                 <label class="text-xs font-bold text-slate-700 block mb-1">2. 新卡片標題 (若自成新卡片)</label>
-                                <input type="text" id="new-card-title-input" placeholder="例如：警械條例第4條爭點" class="w-full p-2 border rounded-lg text-xs">
+                                <input type="text" id="new-card-title-input" placeholder="例如：本科重點爭點研析" class="w-full p-2 border rounded-lg text-xs">
                             </div>
                             <div>
                                 <label class="text-xs font-bold text-slate-700 block mb-1">3. 上傳圖片 / PDF 檔案</label>
@@ -248,12 +224,12 @@
 
                     <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
                         <div class="flex justify-between items-center border-b pb-3 border-slate-100">
-                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded">112 年升官等考試 - 警察法規第 15 題</span>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded">歷屆試題測驗</span>
                             <span id="status-badge" class="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded">未作答</span>
                         </div>
 
                         <div class="text-base font-medium text-slate-900">
-                            關於警察發布職權命令與法規命令之敘述，依現行法規與大法官解釋，下列何者錯誤？
+                            關於發布職權命令與法規命令之敘述，依現行法規與大法官解釋，下列何者錯誤？
                         </div>
 
                         <div class="space-y-2 text-sm">
@@ -337,7 +313,7 @@
             </div>
             
             <div class="space-y-3">
-                <p class="text-xs text-slate-500">將<b>整篇法規全文</b>一次貼入，系統將自動解析條號、切割卡片並呈現於頁面。</p>
+                <p class="text-xs text-slate-500">將<b>整篇法規全文</b>一次貼入，系統將自動解析條號、切割卡片並呈現於當前開啟的科目頁面。</p>
 
                 <div>
                     <label class="text-xs font-bold text-slate-700 block mb-1">上傳法規全文檔 (.txt)</label>
@@ -398,14 +374,9 @@
             }
         };
 
-        let noteCards = [
-            {
-                id: "card_1",
-                title: "警械使用條例第 10-1 條調查小組研析",
-                files: ["111年警械條例修法總整理.pdf"],
-                content: "【爭點摘要】\n1. 內政部應設警械使用調查小組，性質屬專家諮詢組織。\n2. 鑑定結果對司法機關無絕對拘束力。"
-            }
-        ];
+        // 按科目獨立隔離儲存的資料結構
+        let allLawsMap = {};
+        let allNotesMap = {};
 
         let currentExamIndex = 0;
         let activeSubpageId = "sub_1";
@@ -415,14 +386,13 @@
         window.onload = function() {
             renderExamSelect();
             updateViewData();
-            renderNoteCards();
         };
 
         function renderExamSelect() {
             document.getElementById('exam-select').innerHTML = systemData.exams.map((e, index) => `<option value="${index}">${e.name}</option>`).join('');
         }
 
-        /* 渲染選單 */
+        /* 渲染樹狀選單 */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             let navHTML = '';
@@ -466,13 +436,44 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        /* 刪除條文卡片功能 */
+        /* 切換子頁面：自動切換與呈現該子頁面的獨立資料 */
+        function selectSubpage(subId, title) {
+            // 切換前先暫存舊頁面 HTML 變更
+            if (activeSubpageId) {
+                allLawsMap[activeSubpageId] = document.getElementById('laws-card-list').innerHTML;
+            }
+
+            activeSubpageId = subId;
+            document.getElementById('current-sublaw-title').innerText = title;
+            
+            // 載入當前子頁面的獨立法條卡片
+            if (allLawsMap[subId]) {
+                document.getElementById('laws-card-list').innerHTML = allLawsMap[subId];
+            } else {
+                document.getElementById('laws-card-list').innerHTML = `
+                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-slate-900">《${title}》尚未匯入條文</h3>
+                            <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div class="text-sm leading-relaxed text-slate-500 p-2">
+                            請點擊右上角「上傳/匯入本頁面法規全文」按鈕，將《${title}》的條文內容一次貼入。
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderNoteCards();
+            updateViewData();
+        }
+
+        /* 刪除卡片 */
         function deleteLawCard(btnElement) {
             if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「儲存全站」按鈕保存）")) {
                 const card = btnElement.closest('.law-card, .bg-white');
-                if (card) {
-                    card.remove();
-                }
+                if (card) card.remove();
             }
         }
 
@@ -497,13 +498,7 @@
             updateViewData();
         }
 
-        function selectSubpage(subId, title) {
-            activeSubpageId = subId;
-            document.getElementById('current-sublaw-title').innerText = title;
-            updateViewData();
-        }
-
-        /* 全篇法規解析 */
+        /* 全篇法規解析（自動生成至當前開啟的子頁面） */
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
 
@@ -535,8 +530,9 @@
             }
 
             const cardList = document.getElementById('laws-card-list');
-            let count = 0;
+            cardList.innerHTML = ""; // 覆蓋原本預設卡片
 
+            let count = 0;
             parsedArticles.forEach(item => {
                 count++;
                 const newCardId = "law-content-" + Date.now() + "-" + count;
@@ -553,7 +549,7 @@
                                 <button onclick="showRelatedLaws('解析匯入法條。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
                                     <i class="fa-solid fa-link"></i> 檢視關聯法條
                                 </button>
-                                <button onclick="deleteLawCard(this)" title="刪除此法條卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
+                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
@@ -566,10 +562,13 @@
                 cardList.insertAdjacentHTML('beforeend', newCardHTML);
             });
 
+            // 更新至 Map
+            allLawsMap[activeSubpageId] = cardList.innerHTML;
+
             document.getElementById('custom-law-text').value = "";
             document.getElementById('custom-law-is-new').checked = false;
             closeLawUploadModal();
-            alert(`🎉 辨識成功！已自動為您解析出 ${count} 則獨立條文卡片！請記得點擊「儲存全站」進行雲端保存。`);
+            alert(`🎉 成功解析 ${count} 則法條並呈現於本頁面！請記得點擊左側「儲存全站」按鈕。`);
         }
 
         /* 螢光筆功能 */
@@ -611,12 +610,13 @@
             });
         }
 
-        /* 筆記卡片 */
+        /* 筆記卡片（各子頁面獨立） */
         function renderNoteCards() {
             const container = document.getElementById('note-cards-container');
             const select = document.getElementById('target-card-select');
+            const currentSubNotes = allNotesMap[activeSubpageId] || [];
 
-            container.innerHTML = noteCards.map(card => `
+            container.innerHTML = currentSubNotes.map(card => `
                 <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 hover:border-blue-300 transition">
                     <div class="flex justify-between items-start">
                         <h4 class="font-bold text-slate-900 text-base">${card.title}</h4>
@@ -629,7 +629,7 @@
                 </div>
             `).join('');
 
-            select.innerHTML = `<option value="NEW">✨ 自成一個全新筆記卡片</option>` + noteCards.map(c => `<option value="${c.id}">併入卡片：${c.title}</option>`).join('');
+            select.innerHTML = `<option value="NEW">✨ 自成一個全新筆記卡片</option>` + currentSubNotes.map(c => `<option value="${c.id}">併入卡片：${c.title}</option>`).join('');
         }
 
         function processUploadAndCreateCard() {
@@ -639,13 +639,14 @@
 
             if (!fileInput.files || !fileInput.files[0]) return alert("請先選擇要上傳的檔案！");
             const fileName = fileInput.files[0].name;
+            const simulatedText = `\n[自動辨識匯入檔: ${fileName}]\n- 本科爭點研析紀錄。`;
 
-            const simulatedText = `\n[自動辨識匯入檔: ${fileName}]\n- 比例原則與警察裁量權研析重點。`;
+            if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
 
             if (target === "NEW") {
-                noteCards.unshift({ id: "card_" + Date.now(), title: newTitle || `新筆記卡片 (${fileName})`, files: [fileName], content: `【自動識別內文】` + simulatedText });
+                allNotesMap[activeSubpageId].unshift({ id: "card_" + Date.now(), title: newTitle || `新筆記卡片 (${fileName})`, files: [fileName], content: `【自動識別內文】` + simulatedText });
             } else {
-                const targetCard = noteCards.find(c => c.id === target);
+                const targetCard = allNotesMap[activeSubpageId].find(c => c.id === target);
                 if (targetCard) {
                     targetCard.files.push(fileName);
                     targetCard.content += `\n` + simulatedText;
@@ -653,22 +654,25 @@
             }
             fileInput.value = "";
             renderNoteCards();
-            alert("檔案已識別並歸檔！請記得點擊「儲存全站」按鈕。");
+            alert("檔案已識別並歸檔至本科目頁面！請記得點擊「儲存全站」按鈕。");
         }
 
         function updateCardContent(cardId, newText) {
-            const card = noteCards.find(c => c.id === cardId);
+            const currentSubNotes = allNotesMap[activeSubpageId] || [];
+            const card = currentSubNotes.find(c => c.id === cardId);
             if (card) card.content = newText;
         }
 
         function deleteCard(cardId) {
-            if (confirm("確定刪除此卡片？")) {
-                noteCards = noteCards.filter(c => c.id !== cardId);
+            if (confirm("確定刪除此筆記卡片？")) {
+                if (allNotesMap[activeSubpageId]) {
+                    allNotesMap[activeSubpageId] = allNotesMap[activeSubpageId].filter(c => c.id !== cardId);
+                }
                 renderNoteCards();
             }
         }
 
-        /* 試題測驗與對答案 */
+        /* 試題測驗 */
         function submitAnswer() {
             const selected = document.querySelector('input[name="q15"]:checked');
             if (!selected) return alert('請先選擇一個答案！');
@@ -785,8 +789,7 @@
                 if (targetCat) {
                     const newSubId = editingSubId || ("sub_" + Date.now());
                     targetCat.subpages.push({ id: newSubId, title: subTitle, isAlert: false });
-                    activeSubpageId = newSubId;
-                    document.getElementById('current-sublaw-title').innerText = subTitle;
+                    selectSubpage(newSubId, subTitle);
                 }
             }
             closePageModal();
@@ -812,37 +815,40 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      /* 全站資料一鍵總儲存函數 */
+      /* 全站按科目隔離儲存函數 */
       window.saveAllSystemData = async function() {
-          const cardListHTML = document.getElementById('laws-card-list') ? document.getElementById('laws-card-list').innerHTML : '';
-          
+          // 儲存當前頁面的最新卡片 HTML 到 Map 中
+          if (activeSubpageId && document.getElementById('laws-card-list')) {
+              allLawsMap[activeSubpageId] = document.getElementById('laws-card-list').innerHTML;
+          }
+
           try {
-              // 1. 儲存樹狀選單結構與後台設定
+              // 1. 儲存樹狀選單結構
               await setDoc(doc(db, "exam_settings", "system_data"), {
                   systemData: systemData,
                   updatedAt: new Date()
               });
 
-              // 2. 儲存全站法條卡片與螢光筆劃記
-              await setDoc(doc(db, "law_highlights", "police_laws"), {
-                  fullListHTML: cardListHTML,
+              // 2. 儲存全站各科目的法條卡片對照 Map
+              await setDoc(doc(db, "law_highlights", "all_subpages_laws"), {
+                  allLawsMap: allLawsMap,
                   updatedAt: new Date()
               });
 
-              // 3. 儲存個人筆記卡片陣列
-              await setDoc(doc(db, "note_cards_data", "user_notes"), {
-                  noteCards: noteCards,
+              // 3. 儲存全站各科目的筆記卡片對照 Map
+              await setDoc(doc(db, "note_cards_data", "all_subpages_notes"), {
+                  allNotesMap: allNotesMap,
                   updatedAt: new Date()
               });
 
-              alert("🎉 全站所有新增、修改、刪除、劃記與結構調整，已成功永久備份至 Firebase 雲端！");
+              alert("🎉 全站所有科目的獨立卡片、筆記與結構調整，已成功永久備份至 Firebase 雲端！");
           } catch (error) {
               console.error("雲端全站儲存失敗：", error);
-              alert("儲存失敗，請確認 Firebase 網路連線或 Firestore 權限設定。");
+              alert("儲存失敗，請確認網路連線。");
           }
       };
 
-      /* 頁面載入時自動從雲端恢復全站所有狀態 */
+      /* 頁面載入時自動從雲端恢復全站所有科目的獨立狀態 */
       window.loadAllCloudData = async function() {
           try {
               // 讀取選單結構
@@ -852,18 +858,21 @@
                   updateViewData();
               }
 
-              // 讀取法條卡片與劃記
-              const docSnap = await getDoc(doc(db, "law_highlights", "police_laws"));
+              // 讀取各科目法條卡片
+              const docSnap = await getDoc(doc(db, "law_highlights", "all_subpages_laws"));
               if (docSnap.exists()) {
-                  const data = docSnap.data();
-                  if(data.fullListHTML) document.getElementById('laws-card-list').innerHTML = data.fullListHTML;
+                  allLawsMap = docSnap.data().allLawsMap || {};
               }
 
-              // 讀取筆記卡片
-              const notesSnap = await getDoc(doc(db, "note_cards_data", "user_notes"));
+              // 讀取各科目筆記卡片
+              const notesSnap = await getDoc(doc(db, "note_cards_data", "all_subpages_notes"));
               if (notesSnap.exists()) {
-                  noteCards = notesSnap.data().noteCards || [];
-                  renderNoteCards();
+                  allNotesMap = notesSnap.data().allNotesMap || {};
+              }
+
+              // 恢復預設開啟頁面的內容
+              if (activeSubpageId) {
+                  selectSubpage(activeSubpageId, "警械使用條例");
               }
           } catch (error) {
               console.error("全站雲端資料載入失敗：", error);
