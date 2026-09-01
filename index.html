@@ -50,7 +50,7 @@
                 </button>
             </div>
 
-            <!-- 可調整順序的樹狀選單 -->
+            <!-- 可編輯/刪除/調順序的樹狀選單 -->
             <nav class="flex-1 overflow-y-auto p-4 space-y-4 text-sm" id="sidebar-nav">
             </nav>
         </aside>
@@ -391,18 +391,23 @@
 
         /* 本地自動儲存核心函數 */
         function saveAllToStorage(showAlert = false) {
-            const container = document.getElementById('laws-container-inner');
-            if (activeSubpageId && container) {
-                allLawsMap[activeSubpageId] = container.innerHTML;
-            }
+            syncCurrentPageDOM();
 
             try {
                 localStorage.setItem("em_systemData", JSON.stringify(systemData));
                 localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
                 localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
-                if (showAlert) alert("🎉 已成功儲存所有階層條文與劃記變更！");
+                if (showAlert) alert("🎉 已成功儲存所有卡片修改與劃記變更！");
             } catch (e) {
                 console.error("儲存失敗：", e);
+            }
+        }
+
+        /* 捕獲當前頁面 DOM 的最新狀態 */
+        function syncCurrentPageDOM() {
+            const container = document.getElementById('laws-container-inner');
+            if (activeSubpageId && container) {
+                allLawsMap[activeSubpageId] = container.innerHTML;
             }
         }
 
@@ -441,6 +446,7 @@
             }
         }
 
+        /* 渲染左側選單（包含主頁面/子頁面的編輯與刪除控制） */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             if (!currentExam) return;
@@ -448,12 +454,14 @@
             
             currentExam.categories.forEach((cat, catIdx) => {
                 navHTML += `<div class="bg-slate-900/80 rounded-lg border border-slate-800 p-2 space-y-2">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
+                    <div class="group flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
                         <span class="truncate"><i class="fa-solid fa-folder text-blue-500 mr-1"></i> ${cat.title}</span>
-                        <div class="flex items-center gap-1">
-                            <button onclick="moveCategory(${catIdx}, -1)" title="上移主頁面" class="text-slate-500 hover:text-white px-0.5"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
-                            <button onclick="moveCategory(${catIdx}, 1)" title="下移主頁面" class="text-slate-500 hover:text-white px-0.5"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
-                            <button onclick="openMoveSubModal('${cat.id}')" title="在此新增子頁面" class="text-slate-500 hover:text-green-400 px-0.5 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
+                            <button onclick="editCategoryName(${catIdx})" title="編輯主頁面名稱" class="hover:text-blue-400 px-0.5"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                            <button onclick="deleteCategory(${catIdx})" title="刪除主頁面" class="hover:text-red-400 px-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="moveCategory(${catIdx}, -1)" title="上移" class="hover:text-white px-0.5"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
+                            <button onclick="moveCategory(${catIdx}, 1)" title="下移" class="hover:text-white px-0.5"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+                            <button onclick="openMoveSubModal('${cat.id}')" title="在此新增子頁面" class="hover:text-green-400 px-0.5 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
                     <ul class="space-y-1 pl-2 border-l border-slate-700">`;
@@ -463,9 +471,9 @@
                     navHTML += `<li class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs">
                         <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
-                            <button onclick="moveSubpage(${catIdx}, ${subIdx}, -1)" title="上移子頁面" class="hover:text-amber-300"><i class="fa-solid fa-caret-up text-[10px]"></i></button>
-                            <button onclick="moveSubpage(${catIdx}, ${subIdx}, 1)" title="下移子頁面" class="hover:text-amber-300"><i class="fa-solid fa-caret-down text-[10px]"></i></button>
-                            <button onclick="openMoveSubModal('${cat.id}', '${sub.id}', '${sub.title}')" title="變更歸屬主頁面" class="hover:text-amber-400 ml-1"><i class="fa-solid fa-arrow-right-arrow-left text-[10px]"></i></button>
+                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" title="修改名稱" class="hover:text-amber-300"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                            <button onclick="openMoveSubModal('${cat.id}', '${sub.id}', '${sub.title}')" title="變更歸屬主頁面" class="hover:text-amber-300"><i class="fa-solid fa-arrow-right-arrow-left text-[10px]"></i></button>
+                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" title="刪除子頁面" class="hover:text-red-300"><i class="fa-solid fa-trash text-[10px]"></i></button>
                         </div>
                     </li>`;
                 });
@@ -485,14 +493,69 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        function selectSubpage(subId, title) {
-            const container = document.getElementById('laws-container-inner');
-            if (activeSubpageId && container) {
-                allLawsMap[activeSubpageId] = container.innerHTML;
+        /* 編輯主頁面名稱 */
+        function editCategoryName(catIdx) {
+            const cat = systemData.exams[currentExamIndex].categories[catIdx];
+            const newName = prompt("請輸入新的主頁面名稱：", cat.title);
+            if (newName && newName.trim() !== "") {
+                cat.title = newName.trim();
+                updateViewData();
+                saveAllToStorage(false);
             }
+        }
+
+        /* 刪除主頁面 */
+        function deleteCategory(catIdx) {
+            const cat = systemData.exams[currentExamIndex].categories[catIdx];
+            if (confirm(`確定要刪除主頁面「${cat.title}」及其底下的所有子頁面嗎？`)) {
+                systemData.exams[currentExamIndex].categories.splice(catIdx, 1);
+                updateViewData();
+                saveAllToStorage(false);
+            }
+        }
+
+        /* 編輯子頁面名稱 */
+        function editSubpageName(catIdx, subIdx) {
+            const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
+            const newName = prompt("請輸入新的子頁面名稱：", sub.title);
+            if (newName && newName.trim() !== "") {
+                sub.title = newName.trim();
+                if (sub.id === activeSubpageId) {
+                    document.getElementById('current-sublaw-title').innerText = sub.title;
+                }
+                updateViewData();
+                saveAllToStorage(false);
+            }
+        }
+
+        /* 刪除子頁面 */
+        function deleteSubpage(catIdx, subIdx) {
+            const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
+            if (confirm(`確定要刪除子頁面「${sub.title}」嗎？`)) {
+                delete allLawsMap[sub.id];
+                delete allNotesMap[sub.id];
+                systemData.exams[currentExamIndex].categories[catIdx].subpages.splice(subIdx, 1);
+                
+                if (sub.id === activeSubpageId) {
+                    const firstSub = systemData.exams[currentExamIndex].categories[0]?.subpages[0];
+                    if (firstSub) {
+                        selectSubpage(firstSub.id, firstSub.title);
+                    } else {
+                        document.getElementById('laws-container-inner').innerHTML = '<div class="text-slate-400 text-sm">請點擊左側「新增子頁面」開始使用。</div>';
+                    }
+                } else {
+                    updateViewData();
+                }
+                saveAllToStorage(false);
+            }
+        }
+
+        function selectSubpage(subId, title) {
+            syncCurrentPageDOM();
 
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
+            const container = document.getElementById('laws-container-inner');
             
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
@@ -502,7 +565,7 @@
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" class="card-select-checkbox hidden w-4 h-4 text-blue-600 rounded">
-                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">《${title}》標題 (點擊可修改)</h3>
+                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM()">《${title}》標題 (點擊可編輯)</h3>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
@@ -514,8 +577,8 @@
                             </div>
                         </div>
                         <div class="law-card-content space-y-2 text-sm text-slate-800">
-                            <div class="law-item-section" contenteditable="true">第 1 項內容：點擊此處編輯項文字...</div>
-                            <div class="law-subitem-section" contenteditable="true">（一）第 1 款內容：點擊此處編輯款文字...</div>
+                            <div class="law-item-section" contenteditable="true" onblur="syncCurrentPageDOM()">第 1 項內容：點擊此處編輯項文字...</div>
+                            <div class="law-subitem-section" contenteditable="true" onblur="syncCurrentPageDOM()">（一）第 1 款內容：點擊此處編輯款文字...</div>
                         </div>
                     </div>
                 `;
@@ -569,7 +632,7 @@
             }
         }
 
-        /* 手動新增一張空白卡片（包含項、款範本與獨立增加按鈕） */
+        /* 手動新增一張空白卡片（可編輯） */
         function addNewBlankLawCard() {
             const container = document.getElementById('laws-container-inner');
             const newCardHTML = `
@@ -577,7 +640,7 @@
                     <div class="flex justify-between items-start pt-1">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">第 X 條 (點此修改條號與主題)</h3>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM()">第 X 條 (點此修改條號與主題)</h3>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
@@ -590,7 +653,7 @@
                     </div>
                     
                     <div class="law-card-content space-y-2 text-sm text-slate-800">
-                        <div class="law-item-section" contenteditable="true">第 1 項：點擊此處輸入項內容...</div>
+                        <div class="law-item-section" contenteditable="true" onblur="syncCurrentPageDOM()">第 1 項：點擊此處輸入項內容...</div>
                     </div>
 
                     <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
@@ -607,17 +670,17 @@
             saveAllToStorage(false);
         }
 
-        /* 為現有卡片手動動態增加「項」或「款」區塊 */
+        /* 手動為卡片加入新「項」或「款」 */
         function addSectionToCard(btn, type) {
             const card = btn.closest('.law-card');
             const contentBox = card.querySelector('.law-card-content');
             if (!contentBox) return;
 
             if (type === 'item') {
-                const itemHTML = `<div class="law-item-section" contenteditable="true">新項：請點擊輸入內容...</div>`;
+                const itemHTML = `<div class="law-item-section" contenteditable="true" onblur="syncCurrentPageDOM()">新項：請點擊輸入內容...</div>`;
                 contentBox.insertAdjacentHTML('beforeend', itemHTML);
             } else if (type === 'subitem') {
-                const subitemHTML = `<div class="law-subitem-section" contenteditable="true">一、新款：請點擊輸入內容...</div>`;
+                const subitemHTML = `<div class="law-subitem-section" contenteditable="true" onblur="syncCurrentPageDOM()">一、新款：請點擊輸入內容...</div>`;
                 contentBox.insertAdjacentHTML('beforeend', subitemHTML);
             }
             saveAllToStorage(false);
@@ -662,11 +725,11 @@
             articles.forEach(art => {
                 let itemsHTML = '';
                 if (art.items.length === 0) {
-                    itemsHTML = `<div class="law-item-section" contenteditable="true">無內文</div>`;
+                    itemsHTML = `<div class="law-item-section" contenteditable="true" onblur="syncCurrentPageDOM()">無內文</div>`;
                 } else {
                     art.items.forEach(it => {
                         const cssClass = it.type === 'subitem' ? 'law-subitem-section' : 'law-item-section';
-                        itemsHTML += `<div class="${cssClass}" contenteditable="true">${it.text}</div>`;
+                        itemsHTML += `<div class="${cssClass}" contenteditable="true" onblur="syncCurrentPageDOM()">${it.text}</div>`;
                     });
                 }
 
@@ -675,7 +738,7 @@
                         <div class="flex justify-between items-start pt-1">
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true">${art.title}</h3>
+                                <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM()">${art.title}</h3>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
@@ -755,17 +818,6 @@
             const temp = categories[index];
             categories[index] = categories[targetIndex];
             categories[targetIndex] = temp;
-            updateViewData();
-            saveAllToStorage(false);
-        }
-
-        function moveSubpage(catIndex, subIndex, direction) {
-            const subpages = systemData.exams[currentExamIndex].categories[catIndex].subpages;
-            const targetIndex = subIndex + direction;
-            if (targetIndex < 0 || targetIndex >= subpages.length) return;
-            const temp = subpages[subIndex];
-            subpages[subIndex] = subpages[targetIndex];
-            subpages[targetIndex] = temp;
             updateViewData();
             saveAllToStorage(false);
         }
