@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind</title>
+    <title>國家考試智慧備考系統 ExamiMind (雲端同步版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -25,9 +25,14 @@
             <div class="p-4 border-b border-slate-800">
                 <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">當前目標考試</label>
-                    <button onclick="switchMode('admin')" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2 py-0.5 rounded transition">
-                        <i class="fa-solid fa-gear"></i> 後台管理
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <span id="cloud-status" class="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700 flex items-center gap-1">
+                            <i class="fa-solid fa-cloud"></i> 雲端連線中
+                        </span>
+                        <button onclick="switchMode('admin')" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2 py-0.5 rounded transition">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                    </div>
                 </div>
                 <select id="exam-select" onchange="updateViewData()" class="w-full bg-slate-800 text-white font-bold rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </select>
@@ -46,7 +51,7 @@
                 
                 <!-- 【全站一鍵儲存按鈕】 -->
                 <button onclick="saveAllToStorage(true)" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
-                    <i class="fa-solid fa-floppy-disk"></i> 儲存全站所有輸入與變更
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存並跨裝置同步至雲端
                 </button>
             </div>
 
@@ -132,7 +137,7 @@
                                 </div>
 
                                 <button onclick="saveAllToStorage(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
-                                    <i class="fa-solid fa-floppy-disk"></i> 儲存本頁法條與劃記
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> 雲端同步儲存
                                 </button>
                             </div>
                         </div>
@@ -209,7 +214,7 @@
                                     開始辨識並寫入卡片
                                 </button>
                                 <button onclick="saveAllToStorage(true)" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition font-bold">
-                                    <i class="fa-solid fa-floppy-disk"></i> 儲存筆記庫
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存筆記庫至雲端
                                 </button>
                             </div>
                         </div>
@@ -262,7 +267,7 @@
                                 <i class="fa-solid fa-pen-to-square"></i> 開啟/展開逐選項訂正區
                             </button>
                             <button onclick="saveAllToStorage(true)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition ml-auto">
-                                <i class="fa-solid fa-floppy-disk"></i> 儲存錯題檢討紀錄
+                                <i class="fa-solid fa-cloud-arrow-up"></i> 儲存紀錄至雲端
                             </button>
                         </div>
 
@@ -346,8 +351,27 @@
         </div>
     </div>
 
+    <!-- 載入 Firebase 雲端 SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <!-- 系統 JS 控制區 -->
     <script>
+        // 【帶入您的專屬 Firebase 金鑰】
+        const firebaseConfig = {
+            apiKey: "AIzaSyAe9uqCSGiMoeaa_2NcleMUIfTNhzAjBDo",
+            authDomain: "examimindsystem.firebaseapp.com",
+            projectId: "examimindsystem",
+            storageBucket: "examimindsystem.firebasestorage.app",
+            messagingSenderId: "922145488881",
+            appId: "1:922145488881:web:af2fc521085321d8e00e50",
+            measurementId: "G-ZE1TPG3L7P"
+        };
+
+        // 初始化 Firebase 資料庫連線
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let systemData = {
             exams: [
                 {
@@ -389,17 +413,24 @@
         let editingSubId = null;
         let isBatchSelectMode = false;
 
-        /* 本地自動儲存核心函數 */
-        function saveAllToStorage(showAlert = false) {
+        /* 【雲端自動儲存核心】 */
+        async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
+            const statusEl = document.getElementById('cloud-status');
+            if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 儲存中...`;
 
             try {
-                localStorage.setItem("em_systemData", JSON.stringify(systemData));
-                localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
-                localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
-                if (showAlert) alert("🎉 已成功儲存所有卡片修改與劃記變更！");
+                await db.collection('exam_data').doc('user_main_data').set({
+                    systemData: systemData,
+                    allLawsMap: allLawsMap,
+                    allNotesMap: allNotesMap,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check"></i> 雲端已同步`;
+                if (showAlert) alert("🎉 跨裝置雲端資料同步成功！");
             } catch (e) {
-                console.error("儲存失敗：", e);
+                console.error("雲端儲存失敗：", e);
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 同步失敗`;
             }
         }
 
@@ -411,32 +442,30 @@
             }
         }
 
-        /* 本地載入核心函數 */
-        function loadAllFromStorage() {
-            const localSys = localStorage.getItem("em_systemData");
-            const localLaws = localStorage.getItem("em_allLawsMap");
-            const localNotes = localStorage.getItem("em_allNotesMap");
+        /* 【雲端自動同步與即時監聽】 */
+        function initCloudSync() {
+            db.collection('exam_data').doc('user_main_data').onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.systemData) systemData = data.systemData;
+                    if (data.allLawsMap) allLawsMap = data.allLawsMap;
+                    if (data.allNotesMap) allNotesMap = data.allNotesMap;
 
-            if (localSys) {
-                try { systemData = JSON.parse(localSys); } catch(e){}
-            }
-            if (localLaws) {
-                try { allLawsMap = JSON.parse(localLaws); } catch(e){}
-            }
-            if (localNotes) {
-                try { allNotesMap = JSON.parse(localNotes); } catch(e){}
-            }
-
-            renderExamSelect();
-            updateViewData();
-
-            if (activeSubpageId) {
-                selectSubpage(activeSubpageId, "警械使用條例");
-            }
+                    renderExamSelect();
+                    updateViewData();
+                    if (activeSubpageId) {
+                        selectSubpage(activeSubpageId, document.getElementById('current-sublaw-title')?.innerText || "警械使用條例", false);
+                    }
+                    const statusEl = document.getElementById('cloud-status');
+                    if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud"></i> 雲端已同步`;
+                }
+            }, err => {
+                console.error("雲端連線異常：", err);
+            });
         }
 
         window.onload = function() {
-            loadAllFromStorage();
+            initCloudSync();
         };
 
         function renderExamSelect() {
@@ -459,8 +488,6 @@
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
                             <button onclick="editCategoryName(${catIdx})" title="編輯主頁面名稱" class="hover:text-blue-400 px-0.5"><i class="fa-solid fa-pen text-[10px]"></i></button>
                             <button onclick="deleteCategory(${catIdx})" title="刪除主頁面" class="hover:text-red-400 px-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
-                            <button onclick="moveCategory(${catIdx}, -1)" title="上移" class="hover:text-white px-0.5"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
-                            <button onclick="moveCategory(${catIdx}, 1)" title="下移" class="hover:text-white px-0.5"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
                             <button onclick="openMoveSubModal('${cat.id}')" title="在此新增子頁面" class="hover:text-green-400 px-0.5 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
@@ -493,7 +520,6 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        /* 編輯主頁面名稱 */
         function editCategoryName(catIdx) {
             const cat = systemData.exams[currentExamIndex].categories[catIdx];
             const newName = prompt("請輸入新的主頁面名稱：", cat.title);
@@ -504,7 +530,6 @@
             }
         }
 
-        /* 刪除主頁面 */
         function deleteCategory(catIdx) {
             const cat = systemData.exams[currentExamIndex].categories[catIdx];
             if (confirm(`確定要刪除主頁面「${cat.title}」及其底下的所有子頁面嗎？`)) {
@@ -514,7 +539,6 @@
             }
         }
 
-        /* 編輯子頁面名稱 */
         function editSubpageName(catIdx, subIdx) {
             const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
             const newName = prompt("請輸入新的子頁面名稱：", sub.title);
@@ -528,7 +552,6 @@
             }
         }
 
-        /* 刪除子頁面 */
         function deleteSubpage(catIdx, subIdx) {
             const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
             if (confirm(`確定要刪除子頁面「${sub.title}」嗎？`)) {
@@ -550,8 +573,8 @@
             }
         }
 
-        function selectSubpage(subId, title) {
-            syncCurrentPageDOM();
+        function selectSubpage(subId, title, shouldSync = true) {
+            if(shouldSync) syncCurrentPageDOM();
 
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
@@ -586,10 +609,9 @@
 
             renderNoteCards();
             updateViewData();
-            saveAllToStorage(false);
+            if(shouldSync) saveAllToStorage(false);
         }
 
-        /* 批量選取與刪除模式控制 */
         function toggleBatchSelectMode() {
             isBatchSelectMode = !isBatchSelectMode;
             const checkboxes = document.querySelectorAll('.card-select-checkbox');
@@ -632,7 +654,6 @@
             }
         }
 
-        /* 手動新增一張空白卡片（可編輯） */
         function addNewBlankLawCard() {
             const container = document.getElementById('laws-container-inner');
             const newCardHTML = `
@@ -670,7 +691,6 @@
             saveAllToStorage(false);
         }
 
-        /* 手動為卡片加入新「項」或「款」 */
         function addSectionToCard(btn, type) {
             const card = btn.closest('.law-card');
             const contentBox = card.querySelector('.law-card-content');
@@ -686,7 +706,6 @@
             saveAllToStorage(false);
         }
 
-        /* 解析匯入全文：自動識別「條、項、款」階層 */
         function parseAndBatchCreateLaws() {
             const rawText = document.getElementById('custom-law-text').value.trim();
             if (!rawText) return alert("請貼上法規全文或上傳檔案！");
@@ -809,17 +828,6 @@
                     saveAllToStorage(false);
                 }
             }
-        }
-
-        function moveCategory(index, direction) {
-            const categories = systemData.exams[currentExamIndex].categories;
-            const targetIndex = index + direction;
-            if (targetIndex < 0 || targetIndex >= categories.length) return;
-            const temp = categories[index];
-            categories[index] = categories[targetIndex];
-            categories[targetIndex] = temp;
-            updateViewData();
-            saveAllToStorage(false);
         }
 
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
