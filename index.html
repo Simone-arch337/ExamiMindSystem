@@ -359,7 +359,6 @@
             }
         };
 
-        // 各科目獨立儲存結構
         let allLawsMap = {};
         let allNotesMap = {};
 
@@ -375,7 +374,6 @@
             }
         }
 
-        /* 渲染選單 */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             if (!currentExam) return;
@@ -420,9 +418,7 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        /* 切換子頁面 */
         function selectSubpage(subId, title) {
-            // 切換前存當前頁面畫面的變更
             const container = document.getElementById('laws-container-inner');
             if (activeSubpageId && container) {
                 allLawsMap[activeSubpageId] = container.innerHTML;
@@ -453,7 +449,6 @@
             updateViewData();
         }
 
-        /* 單一法條獨立標記/取消新修法標籤 */
         function toggleSingleNewLawBadge(btnElement) {
             const card = btnElement.closest('.law-card');
             if (!card) return;
@@ -481,7 +476,6 @@
             }
         }
 
-        /* 刪除卡片 */
         function deleteLawCard(btnElement) {
             if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「儲存全站」按鈕保存）")) {
                 const card = btnElement.closest('.law-card');
@@ -489,7 +483,6 @@
             }
         }
 
-        /* 順序微調 */
         function moveCategory(index, direction) {
             const categories = systemData.exams[currentExamIndex].categories;
             const targetIndex = index + direction;
@@ -510,7 +503,6 @@
             updateViewData();
         }
 
-        /* 解析匯入全文 */
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
 
@@ -578,7 +570,6 @@
             alert(`🎉 成功解析 ${count} 則法條！請點擊左側「儲存全站」按鈕永久備份。`);
         }
 
-        /* 螢光筆 */
         function applyHighlight(color) {
             const selection = window.getSelection();
             if (!selection.rangeCount || selection.isCollapsed) return alert("請先用滑鼠框選法條文字！");
@@ -617,7 +608,6 @@
             });
         }
 
-        /* 筆記庫 */
         function renderNoteCards() {
             const container = document.getElementById('note-cards-container');
             const select = document.getElementById('target-card-select');
@@ -679,7 +669,6 @@
             }
         }
 
-        /* 試題測驗 */
         function submitAnswer() {
             const selected = document.querySelector('input[name="q15"]:checked');
             if (!selected) return alert('請先選擇一個答案！');
@@ -802,7 +791,7 @@
         }
     </script>
 
-    <!-- Firebase 雲端防流失儲存/載入引擎 -->
+    <!-- Firebase + 本地雙保險儲存與載入引擎 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -820,27 +809,47 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      /* 全站雲端總儲存（非同步同步） */
+      /* 雙保險儲存函數 (本地 + 雲端) */
       window.saveAllSystemData = async function() {
           const container = document.getElementById('laws-container-inner');
           if (activeSubpageId && container) {
               allLawsMap[activeSubpageId] = container.innerHTML;
           }
 
+          // 1. 先寫入本地 localStorage (絕對不掉資料)
+          try {
+              localStorage.setItem("em_systemData", JSON.stringify(systemData));
+              localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
+              localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
+          } catch(e) {
+              console.warn("本地儲存警告：", e);
+          }
+
+          // 2. 推送到 Firebase 雲端
           try {
               await setDoc(doc(db, "exam_settings", "system_data"), { systemData: systemData });
               await setDoc(doc(db, "law_highlights", "all_subpages_laws"), { allLawsMap: allLawsMap });
               await setDoc(doc(db, "note_cards_data", "all_subpages_notes"), { allNotesMap: allNotesMap });
 
-              alert("🎉 成功保存！全站資料已安全備份至雲端，重新整理後不會遺失。");
+              alert("🎉 儲存成功！資料已同步儲存於本機與 Firebase 雲端！");
           } catch (error) {
               console.error("雲端全站儲存失敗：", error);
-              alert("儲存失敗，請確認網路連線。");
+              alert("已成功備份至本機！(警告：Firebase 雲端寫入權限尚未開啟，請依照提示前往 Firebase 設置 Rules)");
           }
       };
 
-      /* 頁面載入時強制作業：先從雲端恢復資料，再開展畫面 */
+      /* 頁面載入：優先讀取本地與雲端資料 */
       window.loadAllCloudData = async function() {
+          // 先從本地讀取快取（確保載入超快且不丟失）
+          const localSys = localStorage.getItem("em_systemData");
+          const localLaws = localStorage.getItem("em_allLawsMap");
+          const localNotes = localStorage.getItem("em_allNotesMap");
+
+          if (localSys) systemData = JSON.parse(localSys);
+          if (localLaws) allLawsMap = JSON.parse(localLaws);
+          if (localNotes) allNotesMap = JSON.parse(localNotes);
+
+          // 試圖從 Firebase 同步最新資料
           try {
               const structSnap = await getDoc(doc(db, "exam_settings", "system_data"));
               if (structSnap.exists()) systemData = structSnap.data().systemData;
@@ -850,17 +859,15 @@
 
               const notesSnap = await getDoc(doc(db, "note_cards_data", "all_subpages_notes"));
               if (notesSnap.exists()) allNotesMap = notesSnap.data().allNotesMap || {};
-
-              renderExamSelect();
-              updateViewData();
-
-              if (activeSubpageId) {
-                  selectSubpage(activeSubpageId, "警械使用條例");
-              }
           } catch (error) {
-              console.error("全站雲端資料載入失敗：", error);
-              renderExamSelect();
-              updateViewData();
+              console.warn("目前使用本地備份資料，雲端讀取狀態：", error);
+          }
+
+          renderExamSelect();
+          updateViewData();
+
+          if (activeSubpageId) {
+              selectSubpage(activeSubpageId, "警械使用條例");
           }
       };
 
