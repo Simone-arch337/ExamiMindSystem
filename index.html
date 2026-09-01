@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全功能完全恢復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (全功能完全修復版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -63,13 +63,15 @@
                     <button onclick="deleteExamType()" title="刪除考試種類" class="bg-slate-800 hover:bg-red-900 text-red-400 px-2 py-1.5 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-trash"></i></button>
                 </div>
 
-                <!-- 🌟 全站智慧搜尋欄 -->
-                <div class="relative mt-2">
-                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                <!-- 🌟 全站智慧搜尋欄 (改為手動點擊/Enter搜尋) -->
+                <div class="relative mt-2 flex gap-1.5">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </div>
+                        <input type="text" id="global-search-input" onkeypress="if(event.key === 'Enter') triggerGlobalSearch()" placeholder="輸入關鍵字..." class="w-full bg-slate-950 text-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 border border-slate-700 focus:outline-none focus:border-blue-500 transition">
                     </div>
-                    <input type="text" id="global-search-input" onkeyup="performGlobalSearch(this.value)" placeholder="搜尋全站法規、法條、筆記..." class="w-full bg-slate-950 text-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 border border-slate-700 focus:outline-none focus:border-blue-500 transition">
-                    <div id="search-results-dropdown" class="absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 hidden divide-y divide-slate-700/50"></div>
+                    <button onclick="triggerGlobalSearch()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-bold transition">查詢</button>
                 </div>
             </div>
 
@@ -158,10 +160,11 @@
                         <div id="laws-container-inner" class="space-y-4 min-h-[300px]"></div>
                     </div>
 
-                    <aside class="w-56 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs">
+                    <!-- 🌟 右側欄位：雙模式（索引 / 搜尋結果列表） -->
+                    <aside class="w-72 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs">
                         <div class="border-b pb-2 flex items-center justify-between text-slate-900 font-bold">
-                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
-                            <button onclick="refreshQuickIndex()" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
+                            <span id="aside-panel-title" class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
+                            <button onclick="refreshQuickIndex()" title="重整/返回索引" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
                         </div>
                         <div id="quick-index-list" class="space-y-1 max-h-[calc(100vh-200px)] overflow-y-auto pr-1"></div>
                     </aside>
@@ -232,10 +235,10 @@
                 <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條文)</h3>
                 <button onclick="closeLawUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <textarea id="custom-law-text" class="w-full h-52 p-3 border rounded-lg text-xs leading-relaxed" placeholder="貼上法規全文..."></textarea>
+            <textarea id="custom-law-text" class="w-full h-52 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;第一章 總則&#10;第 1 條 警察人員執行職務時...&#10;一、為避免非常變故..."></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
-                <button onclick="parseAndBatchCreateLaws()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded">自動辨識生成</button>
+                <button onclick="parseAndBatchCreateLaws()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動辨識生成卡片</button>
             </div>
         </div>
     </div>
@@ -248,7 +251,7 @@
                 <button onclick="closeExamBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-xs text-slate-500">直接貼上整份試題文字，系統自動分割題號、題目與選項卡片：</p>
-            <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要&#10;(C) ..."></textarea>
+            <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要"></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
                 <button onclick="parseAndBatchCreateExamQuestions()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動切割與生成試題</button>
@@ -348,7 +351,7 @@
                 }
 
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
-                if (showAlert) alert("🎉 資料與考題已成功同步至雲端！");
+                if (showAlert) alert("🎉 資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
@@ -362,18 +365,24 @@
             }
         }
 
-        /* 🌟 全站智慧搜尋邏輯 */
-        function performGlobalSearch(keyword) {
-            const dropdown = document.getElementById('search-results-dropdown');
-            if (!keyword || keyword.trim() === "") {
-                dropdown.classList.add('hidden');
+        /* 🌟 修復與升級：全站搜尋（將結果滿版呈現在右側邊欄） */
+        function triggerGlobalSearch() {
+            const input = document.getElementById('global-search-input');
+            const keyword = input.value.trim().toLowerCase();
+            const panelTitle = document.getElementById('aside-panel-title');
+            const listContainer = document.getElementById('quick-index-list');
+
+            if (!keyword) {
+                refreshQuickIndex();
                 return;
             }
 
-            const query = keyword.trim().toLowerCase();
-            let results = [];
+            panelTitle.innerHTML = `<i class="fa-solid fa-magnifying-glass text-blue-600"></i> 搜尋結果 ("${keyword}")`;
 
-            // 搜尋所有法條頁面
+            let resultsHTML = '';
+            let totalCount = 0;
+
+            // 1. 搜尋當前考試底下所有頁面的法規條文
             Object.keys(allLawsMap).forEach(subId => {
                 const subTitle = getSubpageTitleById(subId);
                 const parser = new DOMParser();
@@ -382,34 +391,28 @@
 
                 cards.forEach(card => {
                     const text = card.innerText;
-                    if (text.toLowerCase().includes(query)) {
-                        const cardTitle = card.querySelector('.law-card-title')?.innerText || "法條內文";
-                        results.push({
-                            type: 'law',
-                            subId: subId,
-                            subTitle: subTitle,
-                            title: cardTitle,
-                            snippet: text.substring(0, 60) + '...'
-                        });
+                    if (text.toLowerCase().includes(keyword)) {
+                        totalCount++;
+                        const cardTitle = card.querySelector('.law-card-title')?.innerText || "法條卡片";
+                        resultsHTML += `
+                            <div onclick="jumpToSearchResult('${subId}', '${cardTitle}')" class="p-2 border-b border-slate-100 hover:bg-blue-50 rounded cursor-pointer transition space-y-1">
+                                <div class="flex justify-between items-center text-[11px] font-bold text-blue-600">
+                                    <span>《${subTitle}》</span>
+                                    <span class="bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded">法條</span>
+                                </div>
+                                <div class="font-bold text-slate-800">${cardTitle}</div>
+                                <div class="text-[11px] text-slate-500 line-clamp-2">${text.replace(cardTitle, '').trim().substring(0, 70)}...</div>
+                            </div>
+                        `;
                     }
                 });
             });
 
-            if (results.length === 0) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 italic">未找到相符的法規或內容</div>`;
+            if (totalCount === 0) {
+                listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">未查找到任何包含「${keyword}」的法規或資訊。</div>`;
             } else {
-                dropdown.innerHTML = results.map(r => `
-                    <div onclick="jumpToSearchResult('${r.subId}')" class="p-2.5 hover:bg-slate-700 cursor-pointer transition">
-                        <div class="flex justify-between text-[11px] font-bold text-blue-400 mb-0.5">
-                            <span>《${r.subTitle}》</span>
-                            <span class="text-slate-400">法條</span>
-                        </div>
-                        <div class="text-xs font-semibold text-slate-200">${r.title}</div>
-                        <div class="text-[11px] text-slate-400 truncate mt-0.5">${r.snippet}</div>
-                    </div>
-                `).join('');
+                listContainer.innerHTML = resultsHTML;
             }
-            dropdown.classList.remove('hidden');
         }
 
         function getSubpageTitleById(subId) {
@@ -422,11 +425,151 @@
             return found;
         }
 
-        function jumpToSearchResult(subId) {
-            document.getElementById('search-results-dropdown').classList.add('hidden');
-            document.getElementById('global-search-input').value = "";
+        function jumpToSearchResult(subId, cardTitle) {
             selectSubpage(subId, getSubpageTitleById(subId));
             switchTab('tab-law');
+            
+            setTimeout(() => {
+                const container = document.getElementById('laws-container-inner');
+                if (!container) return;
+                const cards = container.querySelectorAll('.law-card');
+                cards.forEach(card => {
+                    if (card.querySelector('.law-card-title')?.innerText === cardTitle) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.classList.add('ring-2', 'ring-blue-500');
+                        setTimeout(() => card.classList.remove('ring-2', 'ring-blue-500'), 2500);
+                    }
+                });
+            }, 300);
+        }
+
+        /* 🌟 完全修復：法規全文匯入解析引擎 */
+        function parseAndBatchCreateLaws() {
+            const rawText = document.getElementById('custom-law-text').value.trim();
+            if (!rawText) return alert("請貼上法規全文或條文內容！");
+
+            const lines = rawText.split('\n');
+            let parsedElements = [];
+            let currentArticle = null;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                const isChapter = /^第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*[章節編條目]|^總則|^分則/.test(trimmed) && !trimmed.includes('條');
+                const isArticleHeader = /^第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*條/.test(trimmed);
+
+                if (isChapter) {
+                    if (currentArticle) { parsedElements.push({ type: 'article', data: currentArticle }); currentArticle = null; }
+                    parsedElements.push({ type: 'chapter', title: trimmed });
+                } else if (isArticleHeader) {
+                    if (currentArticle) { parsedElements.push({ type: 'article', data: currentArticle }); }
+                    currentArticle = { title: trimmed, items: [] };
+                } else {
+                    if (!currentArticle) currentArticle = { title: "匯入條文", items: [] };
+                    currentArticle.items.push(trimmed);
+                }
+            });
+            if (currentArticle) parsedElements.push({ type: 'article', data: currentArticle });
+
+            const container = document.getElementById('laws-container-inner');
+            container.innerHTML = "";
+
+            parsedElements.forEach(elem => {
+                if (elem.type === 'chapter') {
+                    const chapHTML = `
+                        <div class="chapter-header group cursor-grab">
+                            <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
+                            <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', chapHTML);
+                } else if (elem.type === 'article') {
+                    const art = elem.data;
+                    let itemsText = art.items.join('<br>');
+                    container.insertAdjacentHTML('beforeend', getLawCardHTML(art.title, itemsText || "無內文"));
+                }
+            });
+
+            allLawsMap[activeSubpageId] = container.innerHTML;
+            document.getElementById('custom-law-text').value = "";
+            closeLawUploadModal();
+            refreshQuickIndex();
+            initDragAndDrop();
+            saveAllToStorage(true);
+        }
+
+        /* 完整卡片範本（含連結備註） */
+        function getLawCardHTML(title, bodyText) {
+            return `
+                <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                    <div class="flex justify-between items-start pt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleSingleNewLawBadge(this)" class="text-xs bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium"><i class="fa-solid fa-flag"></i> 新修法</button>
+                            <button onclick="deleteLawCard(this)" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
+                        <div class="law-item-section group flex justify-between items-start">
+                            <span contenteditable="true" onblur="syncCurrentPageDOM()">${bodyText}</span>
+                            <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="law-links-section mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                        <div class="flex items-center justify-between font-semibold text-slate-500">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-link text-blue-500"></i> 相關連結與爭點補充：</span>
+                            <button onclick="addLinkToCard(this)" class="text-blue-600 hover:text-blue-800 text-[11px] font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
+                        </div>
+                        <div class="card-links-list space-y-1">
+                            <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
+                                <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
+                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
+                        <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-blue-500"></i> 新增「項」</button>
+                        <button onclick="addSectionToCard(this, 'subitem')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-green-500"></i> 新增「款」</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addLinkToCard(btn) {
+            const card = btn.closest('.law-card');
+            const linksList = card.querySelector('.card-links-list');
+            if (linksList) {
+                const newLinkHTML = `
+                    <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
+                        <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
+                        <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `;
+                linksList.insertAdjacentHTML('beforeend', newLinkHTML);
+                saveAllToStorage(false);
+            }
+        }
+
+        function refreshQuickIndex() {
+            document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引`;
+            const container = document.getElementById('laws-container-inner');
+            const indexBox = document.getElementById('quick-index-list');
+            if (!container || !indexBox) return;
+            const elements = container.querySelectorAll('.chapter-header, .law-card');
+            indexBox.innerHTML = Array.from(elements).map((el, i) => {
+                el.id = "idx_item_" + i;
+                const text = el.querySelector('.law-card-title, .chapter-title-text')?.innerText || "標題";
+                return `<a href="#idx_item_${i}" class="block text-slate-600 hover:text-blue-600 truncate py-0.5"><i class="fa-regular fa-file-lines text-[10px] text-slate-400 mr-1"></i>${text}</a>`;
+            }).join('') || `<p class="text-slate-400 italic">尚無索引資料...</p>`;
         }
 
         /* 頁面切換機制 */
@@ -450,16 +593,13 @@
             if (tabId === 'mistakes') renderMistakesTab();
         }
 
-        /* 恢復：個人筆記區渲染 */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
-
             if (notes.length === 0) {
                 container.innerHTML = `<div class="col-span-2 text-slate-400 text-xs italic text-center py-8">本頁面尚無獨立筆記，請點擊右上角新增。</div>`;
                 return;
             }
-
             container.innerHTML = notes.map((n, index) => `
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 relative group">
                     <div class="flex justify-between items-center border-b pb-2">
@@ -493,7 +633,6 @@
             }
         }
 
-        /* 恢復：OCR 講義辨識區 */
         function handleOCRUpload(input) {
             if (input.files && input.files[0]) {
                 document.getElementById('ocr-preview-container').classList.remove('hidden');
@@ -509,7 +648,6 @@
             switchTab('tab-notes');
         }
 
-        /* 🌟 歷屆試題：渲染與分題處理 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const questions = allExamQuestionsMap[activeSubpageId] || [];
@@ -528,7 +666,6 @@
                             <i class="fa-regular fa-circle-question text-blue-600"></i> 第 ${qIdx + 1} 題
                         </span>
                         <div class="flex items-center gap-2">
-                            <!-- 歸屬指定法條下拉選單 -->
                             <select onchange="reassignQuestionSubpage(${qIdx}, this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 text-slate-700">
                                 <option value="">指派至法條分頁...</option>
                                 ${currentCatSubpages.map(s => `<option value="${s.id}" ${s.id === activeSubpageId ? 'selected' : ''}>${s.title}</option>`).join('')}
@@ -536,9 +673,7 @@
                             <button onclick="deleteExamQuestion(${qIdx})" class="text-slate-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
-
                     <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none">${q.title}</div>
-                    
                     <div class="space-y-1 pl-2 text-xs text-slate-600">
                         ${(q.options || []).map((opt, oIdx) => `
                             <div class="flex items-center gap-2">
@@ -546,7 +681,6 @@
                             </div>
                         `).join('')}
                     </div>
-
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                         <div class="flex items-center gap-2">
                             <span class="font-semibold text-slate-500">正確答案：</span>
@@ -561,7 +695,6 @@
             `).join('');
         }
 
-        /* 智能切割歷屆試題全文 */
         function parseAndBatchCreateExamQuestions() {
             const rawText = document.getElementById('custom-exam-text').value.trim();
             if (!rawText) return alert("請貼上考題全文！");
@@ -610,10 +743,8 @@
             if (!targetSubId || targetSubId === activeSubpageId) return;
             const q = allExamQuestionsMap[activeSubpageId][qIdx];
             allExamQuestionsMap[activeSubpageId].splice(qIdx, 1);
-
             if (!allExamQuestionsMap[targetSubId]) allExamQuestionsMap[targetSubId] = [];
             allExamQuestionsMap[targetSubId].push(q);
-
             renderMistakesTab();
             saveAllToStorage(true);
             alert(`已將該題目歸類移至《${getSubpageTitleById(targetSubId)}》！`);
@@ -627,10 +758,6 @@
             }
         }
 
-        function openExamBatchModal() { document.getElementById('exam-batch-modal').classList.remove('hidden'); }
-        function closeExamBatchModal() { document.getElementById('exam-batch-modal').classList.add('hidden'); }
-
-        /* 初始化與傳統功能保持 */
         function initDragAndDrop() {
             const cardsContainer = document.getElementById('laws-container-inner');
             if (cardsContainer) {
@@ -772,44 +899,10 @@
             if(shouldSync) saveAllToStorage(false);
         }
 
-        function getLawCardHTML(title, bodyText) {
-            return `
-                <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
-                    <div class="flex justify-between items-start pt-1">
-                        <div class="flex items-center gap-2">
-                            <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
-                            <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="toggleSingleNewLawBadge(this)" class="text-xs bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium"><i class="fa-solid fa-flag"></i> 新修法</button>
-                            <button onclick="deleteLawCard(this)" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
-                    </div>
-                    <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
-                        <div class="law-item-section group flex justify-between items-start">
-                            <span contenteditable="true" onblur="syncCurrentPageDOM()">${bodyText}</span>
-                            <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function refreshQuickIndex() {
-            const container = document.getElementById('laws-container-inner');
-            const indexBox = document.getElementById('quick-index-list');
-            if (!container || !indexBox) return;
-            const elements = container.querySelectorAll('.chapter-header, .law-card');
-            indexBox.innerHTML = Array.from(elements).map((el, i) => {
-                el.id = "idx_item_" + i;
-                const text = el.querySelector('.law-card-title, .chapter-title-text')?.innerText || "標題";
-                return `<a href="#idx_item_${i}" class="block text-slate-600 hover:text-blue-600 truncate py-0.5"><i class="fa-regular fa-file-lines text-[10px] text-slate-400 mr-1"></i>${text}</a>`;
-            }).join('') || `<p class="text-slate-400 italic">尚無索引資料...</p>`;
-        }
-
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
+        function openExamBatchModal() { document.getElementById('exam-batch-modal').classList.remove('hidden'); }
+        function closeExamBatchModal() { document.getElementById('exam-batch-modal').classList.add('hidden'); }
         function openAddPageModal(mode) { document.getElementById('page-modal').classList.remove('hidden'); }
         function closePageModal() { document.getElementById('page-modal').classList.add('hidden'); }
     </script>
