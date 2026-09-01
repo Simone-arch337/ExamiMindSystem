@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (極速雲端分流版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (極速穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -231,12 +231,6 @@
         };
 
         let db = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-        } catch (e) {
-            console.warn("Firebase 初始化失敗：", e);
-        }
 
         let systemData = {
             exams: [
@@ -259,8 +253,6 @@
         };
 
         let allLawsMap = {};
-        let allNotesMap = {};
-
         let currentExamIndex = 0;
         let activeSubpageId = "sub_1";
         let modalMode = "";
@@ -283,7 +275,6 @@
             } catch(e) {}
         }
 
-        /* 【新版：分流極速雲端同步機制】 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             saveToLocalFallback();
@@ -298,13 +289,11 @@
             }
 
             try {
-                // 1. 先儲存輕量級的選單架構檔 (微秒級傳輸)
                 await db.collection('exam_data').doc('system_structure').set({
                     systemData: systemData,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
 
-                // 2. 獨立儲存「當前開啟的頁面」內容，完全解決檔案太大報錯問題
                 if (activeSubpageId && allLawsMap[activeSubpageId]) {
                     await db.collection('exam_pages').doc(activeSubpageId).set({
                         htmlContent: allLawsMap[activeSubpageId],
@@ -328,7 +317,6 @@
             }
         }
 
-        /* 載入指定子頁面之雲端內容 */
         async function loadSubpageFromCloud(subId) {
             if (!db) return;
             try {
@@ -336,44 +324,58 @@
                 if (doc.exists && doc.data().htmlContent) {
                     allLawsMap[subId] = doc.data().htmlContent;
                 }
-            } catch(e) {
-                console.warn("載入頁面分流資料失敗，改用本機快取：", e);
-            }
+            } catch(e) {}
         }
 
-        function initCloudSync() {
+        /* 超時自動渲染保護連線 */
+        function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
             updateViewData();
 
-            if (!db) return;
+            const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
+            if (firstSub) {
+                selectSubpage(firstSub.id, firstSub.title, false);
+            }
 
-            // 即時監聽選單結構
-            db.collection('exam_data').doc('system_structure').onSnapshot(doc => {
-                if (doc.exists && doc.data().systemData) {
-                    systemData = doc.data().systemData;
-                    saveToLocalFallback();
-                    renderExamSelect();
-                    updateViewData();
-                    
-                    if (activeSubpageId) {
-                        const currentTitle = document.getElementById('current-sublaw-title')?.innerText || "法規與條文";
-                        selectSubpage(activeSubpageId, currentTitle, false);
-                    } else {
-                        const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
-                        if (firstSub) selectSubpage(firstSub.id, firstSub.title, false);
-                    }
-
-                    const statusEl = document.getElementById('cloud-status');
-                    if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-emerald-300"></i> 雲端連線中`;
+            // 超時安全閥：如果 2 秒內沒連上 Firebase，直接切換至可存取的本機運作模式
+            const timeoutTimer = setTimeout(() => {
+                const statusEl = document.getElementById('cloud-status');
+                if (statusEl && statusEl.innerText.includes("初始化")) {
+                    statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-emerald-300"></i> 系統準備就緒`;
                 }
-            }, err => {
-                console.warn("雲端監聽失敗：", err);
-            });
+            }, 2000);
+
+            try {
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+
+                    db.collection('exam_data').doc('system_structure').onSnapshot(doc => {
+                        clearTimeout(timeoutTimer);
+                        if (doc.exists && doc.data().systemData) {
+                            systemData = doc.data().systemData;
+                            saveToLocalFallback();
+                            renderExamSelect();
+                            updateViewData();
+                        }
+                        const statusEl = document.getElementById('cloud-status');
+                        if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-emerald-300"></i> 雲端已連線`;
+                    }, err => {
+                        clearTimeout(timeoutTimer);
+                        const statusEl = document.getElementById('cloud-status');
+                        if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 本機模式`;
+                    });
+                }
+            } catch(e) {
+                clearTimeout(timeoutTimer);
+                const statusEl = document.getElementById('cloud-status');
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 本機模式`;
+            }
         }
 
         window.onload = function() {
-            initCloudSync();
+            initApp();
         };
 
         function renderExamSelect() {
@@ -475,7 +477,6 @@
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
             
-            // 若本機沒有快取，非同步從雲端獨立抓取該頁面
             if (!allLawsMap[subId]) {
                 await loadSubpageFromCloud(subId);
             }
@@ -787,7 +788,6 @@
             const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
             if (confirm(`確定要刪除子頁面「${sub.title}」嗎？`)) {
                 delete allLawsMap[sub.id];
-                delete allNotesMap[sub.id];
                 systemData.exams[currentExamIndex].categories[catIdx].subpages.splice(subIdx, 1);
                 
                 if (sub.id === activeSubpageId) {
