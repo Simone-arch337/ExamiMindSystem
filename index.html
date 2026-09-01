@@ -41,7 +41,7 @@
                 </div>
                 
                 <!-- 【全站防流失總儲存按鈕】 -->
-                <button onclick="window.saveAllSystemData()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
+                <button id="save-btn-sidebar" onclick="window.saveAllSystemData()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
                     <i class="fa-solid fa-cloud-arrow-up"></i> 儲存全站所有輸入與架構
                 </button>
             </div>
@@ -116,7 +116,7 @@
                             </div>
                         </div>
 
-                        <!-- 動態法條卡片渲染區（切換子頁面時會清空替換） -->
+                        <!-- 動態法條卡片容器區 -->
                         <div id="laws-container-inner" class="space-y-6">
                         </div>
 
@@ -359,7 +359,7 @@
             }
         };
 
-        // 按科目獨立隔離儲存的資料結構
+        // 各科目獨立儲存結構
         let allLawsMap = {};
         let allNotesMap = {};
 
@@ -368,18 +368,17 @@
         let modalMode = "";
         let editingSubId = null;
 
-        window.onload = function() {
-            renderExamSelect();
-            updateViewData();
-        };
-
         function renderExamSelect() {
-            document.getElementById('exam-select').innerHTML = systemData.exams.map((e, index) => `<option value="${index}">${e.name}</option>`).join('');
+            const select = document.getElementById('exam-select');
+            if(select) {
+                select.innerHTML = systemData.exams.map((e, index) => `<option value="${index}">${e.name}</option>`).join('');
+            }
         }
 
-        /* 渲染樹狀選單 */
+        /* 渲染選單 */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
+            if (!currentExam) return;
             let navHTML = '';
             
             currentExam.categories.forEach((cat, catIdx) => {
@@ -421,18 +420,17 @@
             document.getElementById('admin-tab4-name').value = systemData.tabs.tab4;
         }
 
-        /* 切換子頁面：自動切換與呈現該子頁面的獨立資料 */
+        /* 切換子頁面 */
         function selectSubpage(subId, title) {
-            // 切換前先暫存舊頁面 HTML 變更
-            if (activeSubpageId && document.getElementById('laws-container-inner')) {
-                allLawsMap[activeSubpageId] = document.getElementById('laws-container-inner').innerHTML;
+            // 切換前存當前頁面畫面的變更
+            const container = document.getElementById('laws-container-inner');
+            if (activeSubpageId && container) {
+                allLawsMap[activeSubpageId] = container.innerHTML;
             }
 
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             
-            // 載入當前子頁面的獨立法條卡片
-            const container = document.getElementById('laws-container-inner');
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
             } else {
@@ -455,7 +453,7 @@
             updateViewData();
         }
 
-        /* 單一法條獨立標記/取消「3年內新修條文」紅框標籤功能 */
+        /* 單一法條獨立標記/取消新修法標籤 */
         function toggleSingleNewLawBadge(btnElement) {
             const card = btnElement.closest('.law-card');
             if (!card) return;
@@ -464,7 +462,6 @@
             const titleElement = card.querySelector('.law-card-title');
 
             if (existingBadge) {
-                // 原本有新修標籤 -> 切換為普通標籤
                 existingBadge.remove();
                 card.classList.remove('border-red-200');
                 card.classList.add('border-slate-200');
@@ -473,7 +470,6 @@
                     titleElement.classList.add('text-slate-900');
                 }
             } else {
-                // 原本是普通標籤 -> 套用亮紅新修法標籤
                 const badgeHTML = `<div class="new-law-badge absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>`;
                 card.insertAdjacentHTML('afterbegin', badgeHTML);
                 card.classList.remove('border-slate-200');
@@ -514,7 +510,7 @@
             updateViewData();
         }
 
-        /* 全篇法規解析（自動生成至當前開啟的子頁面） */
+        /* 解析匯入全文 */
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
 
@@ -545,7 +541,7 @@
             }
 
             const container = document.getElementById('laws-container-inner');
-            container.innerHTML = ""; // 覆蓋原本預設卡片
+            container.innerHTML = "";
 
             let count = 0;
             parsedArticles.forEach(item => {
@@ -576,15 +572,13 @@
                 container.insertAdjacentHTML('beforeend', newCardHTML);
             });
 
-            // 更新至 Map
             allLawsMap[activeSubpageId] = container.innerHTML;
-
             document.getElementById('custom-law-text').value = "";
             closeLawUploadModal();
-            alert(`🎉 成功解析 ${count} 則法條並呈現於本頁面！請記得點擊左側「儲存全站」按鈕。`);
+            alert(`🎉 成功解析 ${count} 則法條！請點擊左側「儲存全站」按鈕永久備份。`);
         }
 
-        /* 螢光筆功能 */
+        /* 螢光筆 */
         function applyHighlight(color) {
             const selection = window.getSelection();
             if (!selection.rangeCount || selection.isCollapsed) return alert("請先用滑鼠框選法條文字！");
@@ -623,7 +617,7 @@
             });
         }
 
-        /* 筆記卡片（各子頁面獨立） */
+        /* 筆記庫 */
         function renderNoteCards() {
             const container = document.getElementById('note-cards-container');
             const select = document.getElementById('target-card-select');
@@ -711,7 +705,6 @@
             document.getElementById('correction-area').classList.toggle('hidden');
         }
 
-        /* 通用介面 */
         function showRelatedLaws(summary, lawsList) {
             const container = document.getElementById('related-laws-container');
             let html = `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 font-medium mb-3">${summary}</div>`;
@@ -747,7 +740,6 @@
             window.saveAllSystemData();
         }
 
-        /* Modal 控制 */
         function openAddPageModal(mode) {
             modalMode = mode;
             editingSubId = null;
@@ -810,7 +802,7 @@
         }
     </script>
 
-    <!-- Firebase 雲端總儲存與自動載入核心引擎 -->
+    <!-- Firebase 雲端防流失儲存/載入引擎 -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -828,67 +820,47 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      /* 全站按科目隔離儲存函數 */
+      /* 全站雲端總儲存（非同步同步） */
       window.saveAllSystemData = async function() {
-          // 儲存當前頁面的最新卡片 HTML 到 Map 中
-          if (activeSubpageId && document.getElementById('laws-container-inner')) {
-              allLawsMap[activeSubpageId] = document.getElementById('laws-container-inner').innerHTML;
+          const container = document.getElementById('laws-container-inner');
+          if (activeSubpageId && container) {
+              allLawsMap[activeSubpageId] = container.innerHTML;
           }
 
           try {
-              // 1. 儲存樹狀選單結構
-              await setDoc(doc(db, "exam_settings", "system_data"), {
-                  systemData: systemData,
-                  updatedAt: new Date()
-              });
+              await setDoc(doc(db, "exam_settings", "system_data"), { systemData: systemData });
+              await setDoc(doc(db, "law_highlights", "all_subpages_laws"), { allLawsMap: allLawsMap });
+              await setDoc(doc(db, "note_cards_data", "all_subpages_notes"), { allNotesMap: allNotesMap });
 
-              // 2. 儲存全站各科目的法條卡片對照 Map
-              await setDoc(doc(db, "law_highlights", "all_subpages_laws"), {
-                  allLawsMap: allLawsMap,
-                  updatedAt: new Date()
-              });
-
-              // 3. 儲存全站各科目的筆記卡片對照 Map
-              await setDoc(doc(db, "note_cards_data", "all_subpages_notes"), {
-                  allNotesMap: allNotesMap,
-                  updatedAt: new Date()
-              });
-
-              alert("🎉 全站所有科目的獨立卡片、筆記與結構調整，已成功永久備份至 Firebase 雲端！");
+              alert("🎉 成功保存！全站資料已安全備份至雲端，重新整理後不會遺失。");
           } catch (error) {
               console.error("雲端全站儲存失敗：", error);
               alert("儲存失敗，請確認網路連線。");
           }
       };
 
-      /* 頁面載入時自動從雲端恢復全站所有科目的獨立狀態 */
+      /* 頁面載入時強制作業：先從雲端恢復資料，再開展畫面 */
       window.loadAllCloudData = async function() {
           try {
-              // 讀取選單結構
               const structSnap = await getDoc(doc(db, "exam_settings", "system_data"));
-              if (structSnap.exists()) {
-                  systemData = structSnap.data().systemData;
-                  updateViewData();
-              }
+              if (structSnap.exists()) systemData = structSnap.data().systemData;
 
-              // 讀取各科目法條卡片
               const docSnap = await getDoc(doc(db, "law_highlights", "all_subpages_laws"));
-              if (docSnap.exists()) {
-                  allLawsMap = docSnap.data().allLawsMap || {};
-              }
+              if (docSnap.exists()) allLawsMap = docSnap.data().allLawsMap || {};
 
-              // 讀取各科目筆記卡片
               const notesSnap = await getDoc(doc(db, "note_cards_data", "all_subpages_notes"));
-              if (notesSnap.exists()) {
-                  allNotesMap = notesSnap.data().allNotesMap || {};
-              }
+              if (notesSnap.exists()) allNotesMap = notesSnap.data().allNotesMap || {};
 
-              // 恢復預設開啟頁面的內容
+              renderExamSelect();
+              updateViewData();
+
               if (activeSubpageId) {
                   selectSubpage(activeSubpageId, "警械使用條例");
               }
           } catch (error) {
               console.error("全站雲端資料載入失敗：", error);
+              renderExamSelect();
+              updateViewData();
           }
       };
 
