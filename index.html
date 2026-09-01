@@ -40,9 +40,9 @@
                     </button>
                 </div>
                 
-                <!-- 【全站防流失總儲存按鈕】 -->
-                <button id="save-btn-sidebar" onclick="window.saveAllSystemData()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存全站所有輸入與架構
+                <!-- 【全站一鍵儲存按鈕】 -->
+                <button onclick="saveAllToStorage(true)" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
+                    <i class="fa-solid fa-floppy-disk"></i> 儲存全站所有輸入與變更
                 </button>
             </div>
 
@@ -110,7 +110,7 @@
                                 <button onclick="removeHighlight()" title="取消螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
-                                <button onclick="window.saveAllSystemData()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
+                                <button onclick="saveAllToStorage(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
                                     <i class="fa-solid fa-floppy-disk"></i> 儲存本頁法條與劃記
                                 </button>
                             </div>
@@ -187,7 +187,7 @@
                                 <button onclick="processUploadAndCreateCard()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition">
                                     開始辨識並寫入卡片
                                 </button>
-                                <button onclick="window.saveAllSystemData()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition font-bold">
+                                <button onclick="saveAllToStorage(true)" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition font-bold">
                                     <i class="fa-solid fa-floppy-disk"></i> 儲存筆記庫
                                 </button>
                             </div>
@@ -240,7 +240,7 @@
                             <button onclick="toggleCorrection()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm px-4 py-2 rounded-lg transition">
                                 <i class="fa-solid fa-pen-to-square"></i> 開啟/展開逐選項訂正區
                             </button>
-                            <button onclick="window.saveAllSystemData()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition ml-auto">
+                            <button onclick="saveAllToStorage(true)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition ml-auto">
                                 <i class="fa-solid fa-floppy-disk"></i> 儲存錯題檢討紀錄
                             </button>
                         </div>
@@ -274,7 +274,7 @@
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 2</label><input type="text" id="admin-tab2-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 3</label><input type="text" id="admin-tab3-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
                     <div><label class="text-xs text-slate-600 block mb-1">子頁面 4</label><input type="text" id="admin-tab4-name" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
-                    <button onclick="saveAdminSettings()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-6 py-2 rounded-lg">儲存變更至雲端</button>
+                    <button onclick="saveAdminSettings()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm px-6 py-2 rounded-lg">儲存變更</button>
                 </div>
             </div>
 
@@ -367,6 +367,51 @@
         let modalMode = "";
         let editingSubId = null;
 
+        /* 本地自動儲存核心函數 */
+        function saveAllToStorage(showAlert = false) {
+            const container = document.getElementById('laws-container-inner');
+            if (activeSubpageId && container) {
+                allLawsMap[activeSubpageId] = container.innerHTML;
+            }
+
+            try {
+                localStorage.setItem("em_systemData", JSON.stringify(systemData));
+                localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
+                localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
+                if (showAlert) alert("🎉 已成功將所有異動與劃記永久儲存！");
+            } catch (e) {
+                console.error("儲存失敗：", e);
+            }
+        }
+
+        /* 本地載入核心函數 */
+        function loadAllFromStorage() {
+            const localSys = localStorage.getItem("em_systemData");
+            const localLaws = localStorage.getItem("em_allLawsMap");
+            const localNotes = localStorage.getItem("em_allNotesMap");
+
+            if (localSys) {
+                try { systemData = JSON.parse(localSys); } catch(e){}
+            }
+            if (localLaws) {
+                try { allLawsMap = JSON.parse(localLaws); } catch(e){}
+            }
+            if (localNotes) {
+                try { allNotesMap = JSON.parse(localNotes); } catch(e){}
+            }
+
+            renderExamSelect();
+            updateViewData();
+
+            if (activeSubpageId) {
+                selectSubpage(activeSubpageId, "警械使用條例");
+            }
+        }
+
+        window.onload = function() {
+            loadAllFromStorage();
+        };
+
         function renderExamSelect() {
             const select = document.getElementById('exam-select');
             if(select) {
@@ -447,6 +492,7 @@
 
             renderNoteCards();
             updateViewData();
+            saveAllToStorage(false); // 切換頁面時自動背景存檔
         }
 
         function toggleSingleNewLawBadge(btnElement) {
@@ -474,12 +520,16 @@
                     titleElement.classList.add('text-red-600');
                 }
             }
+            saveAllToStorage(false);
         }
 
         function deleteLawCard(btnElement) {
-            if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「儲存全站」按鈕保存）")) {
+            if (confirm("確定要刪除這張法條卡片嗎？")) {
                 const card = btnElement.closest('.law-card');
-                if (card) card.remove();
+                if (card) {
+                    card.remove();
+                    saveAllToStorage(false);
+                }
             }
         }
 
@@ -491,6 +541,7 @@
             categories[index] = categories[targetIndex];
             categories[targetIndex] = temp;
             updateViewData();
+            saveAllToStorage(false);
         }
 
         function moveSubpage(catIndex, subIndex, direction) {
@@ -501,6 +552,7 @@
             subpages[subIndex] = subpages[targetIndex];
             subpages[targetIndex] = temp;
             updateViewData();
+            saveAllToStorage(false);
         }
 
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
@@ -567,7 +619,7 @@
             allLawsMap[activeSubpageId] = container.innerHTML;
             document.getElementById('custom-law-text').value = "";
             closeLawUploadModal();
-            alert(`🎉 成功解析 ${count} 則法條！請點擊左側「儲存全站」按鈕永久備份。`);
+            saveAllToStorage(true);
         }
 
         function applyHighlight(color) {
@@ -579,6 +631,7 @@
             span.appendChild(range.extractContents());
             range.insertNode(span);
             selection.removeAllRanges();
+            saveAllToStorage(false);
         }
 
         function removeHighlight() {
@@ -595,6 +648,7 @@
                 }
             });
             selection.removeAllRanges();
+            saveAllToStorage(false);
         }
 
         function changeHighlightColor(newColor) {
@@ -606,6 +660,7 @@
             highlightedSpans.forEach(span => {
                 if (selection.containsNode(span, true)) span.className = "highlight-" + newColor;
             });
+            saveAllToStorage(false);
         }
 
         function renderNoteCards() {
@@ -651,13 +706,16 @@
             }
             fileInput.value = "";
             renderNoteCards();
-            alert("檔案已識別並歸檔至本科目頁面！請記得點擊「儲存全站」按鈕。");
+            saveAllToStorage(true);
         }
 
         function updateCardContent(cardId, newText) {
             const currentSubNotes = allNotesMap[activeSubpageId] || [];
             const card = currentSubNotes.find(c => c.id === cardId);
-            if (card) card.content = newText;
+            if (card) {
+                card.content = newText;
+                saveAllToStorage(false);
+            }
         }
 
         function deleteCard(cardId) {
@@ -666,6 +724,7 @@
                     allNotesMap[activeSubpageId] = allNotesMap[activeSubpageId].filter(c => c.id !== cardId);
                 }
                 renderNoteCards();
+                saveAllToStorage(false);
             }
         }
 
@@ -726,7 +785,7 @@
             systemData.tabs.tab4 = document.getElementById('admin-tab4-name').value;
             updateViewData();
             switchMode('student');
-            window.saveAllSystemData();
+            saveAllToStorage(true);
         }
 
         function openAddPageModal(mode) {
@@ -788,92 +847,8 @@
             }
             closePageModal();
             updateViewData();
+            saveAllToStorage(false);
         }
-    </script>
-
-    <!-- Firebase + 本地雙保險儲存與載入引擎 -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyAe9uqCSGiMoeaa_2NcleMUIfTNhzAjBDo",
-        authDomain: "examimindsystem.firebaseapp.com",
-        projectId: "examimindsystem",
-        storageBucket: "examimindsystem.firebasestorage.app",
-        messagingSenderId: "922145488881",
-        appId: "1:922145488881:web:af2fc521085321d8e00e50",
-        measurementId: "G-ZE1TPG3L7P"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-
-      /* 雙保險儲存函數 (本地 + 雲端) */
-      window.saveAllSystemData = async function() {
-          const container = document.getElementById('laws-container-inner');
-          if (activeSubpageId && container) {
-              allLawsMap[activeSubpageId] = container.innerHTML;
-          }
-
-          // 1. 先寫入本地 localStorage (絕對不掉資料)
-          try {
-              localStorage.setItem("em_systemData", JSON.stringify(systemData));
-              localStorage.setItem("em_allLawsMap", JSON.stringify(allLawsMap));
-              localStorage.setItem("em_allNotesMap", JSON.stringify(allNotesMap));
-          } catch(e) {
-              console.warn("本地儲存警告：", e);
-          }
-
-          // 2. 推送到 Firebase 雲端
-          try {
-              await setDoc(doc(db, "exam_settings", "system_data"), { systemData: systemData });
-              await setDoc(doc(db, "law_highlights", "all_subpages_laws"), { allLawsMap: allLawsMap });
-              await setDoc(doc(db, "note_cards_data", "all_subpages_notes"), { allNotesMap: allNotesMap });
-
-              alert("🎉 儲存成功！資料已同步儲存於本機與 Firebase 雲端！");
-          } catch (error) {
-              console.error("雲端全站儲存失敗：", error);
-              alert("已成功備份至本機！(警告：Firebase 雲端寫入權限尚未開啟，請依照提示前往 Firebase 設置 Rules)");
-          }
-      };
-
-      /* 頁面載入：優先讀取本地與雲端資料 */
-      window.loadAllCloudData = async function() {
-          // 先從本地讀取快取（確保載入超快且不丟失）
-          const localSys = localStorage.getItem("em_systemData");
-          const localLaws = localStorage.getItem("em_allLawsMap");
-          const localNotes = localStorage.getItem("em_allNotesMap");
-
-          if (localSys) systemData = JSON.parse(localSys);
-          if (localLaws) allLawsMap = JSON.parse(localLaws);
-          if (localNotes) allNotesMap = JSON.parse(localNotes);
-
-          // 試圖從 Firebase 同步最新資料
-          try {
-              const structSnap = await getDoc(doc(db, "exam_settings", "system_data"));
-              if (structSnap.exists()) systemData = structSnap.data().systemData;
-
-              const docSnap = await getDoc(doc(db, "law_highlights", "all_subpages_laws"));
-              if (docSnap.exists()) allLawsMap = docSnap.data().allLawsMap || {};
-
-              const notesSnap = await getDoc(doc(db, "note_cards_data", "all_subpages_notes"));
-              if (notesSnap.exists()) allNotesMap = notesSnap.data().allNotesMap || {};
-          } catch (error) {
-              console.warn("目前使用本地備份資料，雲端讀取狀態：", error);
-          }
-
-          renderExamSelect();
-          updateViewData();
-
-          if (activeSubpageId) {
-              selectSubpage(activeSubpageId, "警械使用條例");
-          }
-      };
-
-      window.addEventListener('DOMContentLoaded', () => {
-          window.loadAllCloudData();
-      });
     </script>
 </body>
 </html>
