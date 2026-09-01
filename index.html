@@ -45,22 +45,32 @@
         
         <!-- 1. 左側欄：目標考試切換與樹狀選單 -->
         <aside class="w-80 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800">
-            <div class="p-4 border-b border-slate-800">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">當前目標考試</label>
-                    <div class="flex items-center gap-1">
-                        <span id="cloud-status" class="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700 flex items-center gap-1">
-                            <i class="fa-solid fa-cloud"></i> 雲端連線中
-                        </span>
-                        <button onclick="switchMode('admin')" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2 py-0.5 rounded transition">
-                            <i class="fa-solid fa-gear"></i>
-                        </button>
-                    </div>
+            
+            <!-- 考試種類選單與管理區 -->
+            <div class="p-4 border-b border-slate-800 space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">當前目標考試</label>
+                    <span id="cloud-status" class="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700 flex items-center gap-1">
+                        <i class="fa-solid fa-cloud"></i> 雲端連線中
+                    </span>
                 </div>
-                <select id="exam-select" onchange="updateViewData()" class="w-full bg-slate-800 text-white font-bold rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </select>
+                
+                <div class="flex gap-1.5">
+                    <select id="exam-select" onchange="changeExam(this.value)" class="flex-1 bg-slate-800 text-white font-bold text-xs rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate">
+                    </select>
+                    <button onclick="addExamType()" title="新增考試種類" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1.5 rounded-lg text-xs transition">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <button onclick="editExamType()" title="修改考試名稱" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 rounded-lg text-xs border border-slate-700 transition">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button onclick="deleteExamType()" title="刪除考試種類" class="bg-slate-800 hover:bg-red-900 text-red-400 px-2 py-1.5 rounded-lg text-xs border border-slate-700 transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
             </div>
 
+            <!-- 新增頁面與全站總儲存按鈕區 -->
             <div class="p-3 border-b border-slate-800/60 bg-slate-950/40 flex flex-col gap-2">
                 <div class="flex gap-2">
                     <button onclick="openAddPageModal('main')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1.5 px-2 rounded border border-slate-700 flex items-center justify-center gap-1 transition">
@@ -76,6 +86,7 @@
                 </button>
             </div>
 
+            <!-- 樹狀選單導覽 -->
             <nav class="flex-1 overflow-y-auto p-4 space-y-4 text-sm" id="sidebar-nav">
             </nav>
         </aside>
@@ -85,11 +96,12 @@
             
             <div id="student-view" class="flex-1 flex flex-col relative">
                 
+                <!-- 頁面標題與 Tab 功能頁 -->
                 <header class="bg-white border-b border-slate-200 px-6 pt-4 pb-0 shadow-sm sticky top-0 z-20">
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                                <span id="current-sublaw-title">警械使用條例</span>
+                                <span id="current-sublaw-title">請選擇或新增子頁面</span>
                             </h1>
                         </div>
                         <div class="flex gap-2">
@@ -105,6 +117,7 @@
                         </div>
                     </div>
 
+                    <!-- 四大分頁 Tab -->
                     <div class="flex gap-8 border-b border-slate-200 text-sm font-semibold text-slate-600">
                         <button onclick="switchTab('tab-law')" id="btn-tab-law" class="pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
                             <i class="fa-solid fa-gavel"></i> <span id="label-tab-law">1. 法規與條文對照</span>
@@ -121,33 +134,34 @@
                     </div>
                 </header>
 
-                <!-- 子頁面 1：法規與螢光筆劃記 -->
+                <!-- 子頁面 1：法規內容 -->
                 <div id="content-tab-law" class="p-6 tab-content flex gap-6">
                     <div class="flex-1 space-y-4" id="laws-card-list">
                         
+                        <!-- 極簡螢光筆與批量管理工具列 -->
                         <div class="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md flex items-center justify-between sticky top-[108px] z-10 flex-wrap gap-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-slate-500 font-medium flex items-center gap-1">
                                     <i class="fa-solid fa-highlighter text-amber-500"></i> 劃記：
                                 </span>
-                                <button onclick="applyHighlight('yellow')" title="標記黃色重點" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
-                                <button onclick="applyHighlight('green')" title="標記綠色重點" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
-                                <button onclick="applyHighlight('pink')" title="標記粉色重點" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('yellow')" title="劃黃色螢光" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('green')" title="劃綠色螢光" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('pink')" title="劃粉色螢光" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
                                 <div class="h-4 w-px bg-slate-200 mx-1"></div>
-                                <button onclick="removeHighlight()" title="取消螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
+                                <button onclick="removeHighlight()" title="擦除螢光" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs">
                                     <i class="fa-solid fa-eraser"></i>
                                 </button>
                             </div>
 
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleBatchSelectMode()" id="btn-batch-toggle" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded transition border font-medium flex items-center gap-1">
-                                    <i class="fa-regular fa-square-check"></i> 批量選擇 (全選刪除)
+                                    <i class="fa-regular fa-square-check"></i> 批量刪除管理
                                 </button>
                                 <div id="batch-actions" class="hidden items-center gap-2">
                                     <button onclick="selectAllCards(true)" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-2.5 py-1 rounded border border-blue-200 font-medium">全選</button>
                                     <button onclick="selectAllCards(false)" class="text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 px-2.5 py-1 rounded border border-slate-200 font-medium">取消全選</button>
                                     <button onclick="deleteSelectedCards()" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition font-bold flex items-center gap-1 shadow-sm">
-                                        <i class="fa-solid fa-trash-can"></i> 刪除選取卡片
+                                        <i class="fa-solid fa-trash-can"></i> 刪除選取
                                     </button>
                                 </div>
                                 <button onclick="saveAllToStorage(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition ml-1 font-bold">
@@ -156,11 +170,11 @@
                             </div>
                         </div>
 
-                        <!-- 動態法條卡片與章節容器 -->
+                        <!-- 卡片與章節內容區 -->
                         <div id="laws-container-inner" class="space-y-4"></div>
                     </div>
 
-                    <!-- 【右側精簡快速索引（不佔空間）】 -->
+                    <!-- 右側精簡索引 -->
                     <aside class="w-56 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs">
                         <div class="border-b pb-2 flex items-center justify-between text-slate-900 font-bold">
                             <span class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
@@ -172,49 +186,39 @@
                     </aside>
                 </div>
 
-                <!-- 其餘子頁面 -->
+                <!-- 其餘 Tab 分頁預留 -->
                 <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
-                    <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-                        <h3 class="text-base font-bold text-slate-800">講義與 OCR 辨識區</h3>
-                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm"><h3 class="font-bold">講義與 OCR 辨識區</h3></div>
                 </div>
                 <div id="content-tab-notes" class="p-6 space-y-6 tab-content hidden">
                     <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
                 <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
-                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">歷屆試題區</div>
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"><h3 class="font-bold">歷屆試題檢討區</h3></div>
                 </div>
 
             </div>
-
-            <!-- 後台管理視圖 -->
-            <div id="admin-view" class="flex-1 p-6 space-y-6 hidden">
-                <div class="flex justify-between items-center border-b pb-4">
-                    <h2 class="text-xl font-bold text-slate-900">後台設定</h2>
-                    <button onclick="switchMode('student')" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg">返回前台</button>
-                </div>
-            </div>
-
         </main>
     </div>
 
-    <!-- Modal 視窗 -->
+    <!-- 新增/編輯頁面彈窗 Modal -->
     <div id="page-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-slate-200 space-y-4">
             <h3 class="text-base font-bold text-slate-900" id="modal-title">新增頁面</h3>
-            <div id="modal-field-main" class="hidden"><input type="text" id="input-main-title" placeholder="主頁面名稱" class="w-full p-2 border rounded text-sm"></div>
+            <div id="modal-field-main" class="hidden"><input type="text" id="input-main-title" placeholder="主頁面名稱 (如: 行政法)" class="w-full p-2 border rounded text-sm"></div>
             <div id="modal-field-sub" class="hidden space-y-3">
-                <input type="text" id="input-sub-title" placeholder="子頁面名稱" class="w-full p-2 border rounded text-sm">
+                <input type="text" id="input-sub-title" placeholder="子頁面名稱 (如: 行程序法)" class="w-full p-2 border rounded text-sm">
                 <select id="select-parent-main" class="w-full p-2 border rounded text-sm bg-slate-50"></select>
             </div>
-            <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定新增</button></div>
+            <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定新增</button></div>
         </div>
     </div>
 
+    <!-- 法規全文批次匯入 Modal -->
     <div id="law-upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-[580px] p-6 border border-slate-200 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動識別章節、條、項、款)</h3>
+                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割章節、條、項、款)</h3>
                 <button onclick="closeLawUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <textarea id="custom-law-text" class="w-full h-52 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;第一章 總則&#10;第 1 條 警察人員執行職務時...&#10;一、為避免非常變故..."></textarea>
@@ -225,7 +229,7 @@
         </div>
     </div>
 
-    <!-- 載入 Firebase 雲端 SDK -->
+    <!-- Firebase SDK 載入 -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -253,8 +257,8 @@
                             id: "cat_1",
                             title: "警察法規 (專業科目)",
                             subpages: [
-                                { id: "sub_1", title: "警械使用條例", isAlert: true },
-                                { id: "sub_2", title: "警察法及其細則", isAlert: false }
+                                { id: "sub_1", title: "警械使用條例" },
+                                { id: "sub_2", title: "警察法及其細則" }
                             ]
                         }
                     ]
@@ -268,8 +272,11 @@
 
         let currentExamIndex = 0;
         let activeSubpageId = "sub_1";
+        let modalMode = "";
+        let editingSubId = null;
         let isBatchSelectMode = false;
 
+        /* 雲端自動同步核心 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             const statusEl = document.getElementById('cloud-status');
@@ -307,9 +314,15 @@
 
                     renderExamSelect();
                     updateViewData();
-                    if (activeSubpageId) {
-                        selectSubpage(activeSubpageId, document.getElementById('current-sublaw-title')?.innerText || "警械使用條例", false);
+                    
+                    const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
+                    if (firstSub && !activeSubpageId) {
+                        selectSubpage(firstSub.id, firstSub.title, false);
+                    } else if (activeSubpageId) {
+                        const currentTitle = document.getElementById('current-sublaw-title')?.innerText || "法規與條文";
+                        selectSubpage(activeSubpageId, currentTitle, false);
                     }
+
                     const statusEl = document.getElementById('cloud-status');
                     if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud"></i> 雲端已同步`;
                 }
@@ -322,11 +335,70 @@
             initCloudSync();
         };
 
+        /* 渲染考試下拉選單 */
         function renderExamSelect() {
             const select = document.getElementById('exam-select');
-            if(select) select.innerHTML = systemData.exams.map((e, index) => `<option value="${index}">${e.name}</option>`).join('');
+            if(select) {
+                select.innerHTML = systemData.exams.map((e, index) => `<option value="${index}" ${index == currentExamIndex ? 'selected' : ''}>${e.name}</option>`).join('');
+            }
         }
 
+        /* 切換考試種類 */
+        function changeExam(index) {
+            syncCurrentPageDOM();
+            currentExamIndex = parseInt(index);
+            updateViewData();
+
+            const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
+            if (firstSub) {
+                selectSubpage(firstSub.id, firstSub.title, false);
+            } else {
+                activeSubpageId = null;
+                document.getElementById('current-sublaw-title').innerText = "請新增主頁面與子頁面";
+                document.getElementById('laws-container-inner').innerHTML = `<div class="text-slate-400 text-sm italic">此考試類別尚無頁面，請點擊左側「新增主頁面」開始建立。</div>`;
+            }
+            saveAllToStorage(false);
+        }
+
+        /* 管理考試種類：新增、修改、刪除 */
+        function addExamType() {
+            const name = prompt("請輸入新增的考試種類名稱：", "例如：司法特考三等");
+            if (name && name.trim() !== "") {
+                const newExam = {
+                    id: "exam_" + Date.now(),
+                    name: "📘 " + name.trim(),
+                    categories: []
+                };
+                systemData.exams.push(newExam);
+                currentExamIndex = systemData.exams.length - 1;
+                renderExamSelect();
+                changeExam(currentExamIndex);
+            }
+        }
+
+        function editExamType() {
+            const currentExam = systemData.exams[currentExamIndex];
+            if (!currentExam) return;
+            const newName = prompt("修改當前考試名稱：", currentExam.name);
+            if (newName && newName.trim() !== "") {
+                currentExam.name = newName.trim();
+                renderExamSelect();
+                saveAllToStorage(false);
+            }
+        }
+
+        function deleteExamType() {
+            if (systemData.exams.length <= 1) return alert("系統中至少需要保留一個考試種類！");
+            const currentExam = systemData.exams[currentExamIndex];
+            if (confirm(`確定要刪除考試「${currentExam.name}」及其底下所有的法規卡片嗎？`)) {
+                systemData.exams.splice(currentExamIndex, 1);
+                currentExamIndex = 0;
+                renderExamSelect();
+                changeExam(0);
+            }
+        }
+
+        /* 渲染左側分類樹狀選單 */
         function updateViewData() {
             const currentExam = systemData.exams[currentExamIndex];
             if (!currentExam) return;
@@ -337,27 +409,29 @@
                     <div class="group flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
                         <span class="truncate"><i class="fa-solid fa-folder text-blue-500 mr-1"></i> ${cat.title}</span>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
-                            <button onclick="editCategoryName(${catIdx})" class="hover:text-blue-400 px-0.5"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                            <button onclick="deleteCategory(${catIdx})" class="hover:text-red-400 px-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="editCategoryName(${catIdx})" title="編輯主頁面名稱" class="hover:text-blue-400 px-0.5"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                            <button onclick="deleteCategory(${catIdx})" title="刪除主頁面" class="hover:text-red-400 px-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="openMoveSubModal('${cat.id}')" title="在此新增子頁面" class="hover:text-green-400 px-0.5 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
                     <ul class="space-y-1 pl-2 border-l border-slate-700">`;
                 
                 cat.subpages.forEach((sub, subIdx) => {
                     const isSelected = sub.id === activeSubpageId;
-                    navHTML += `<li class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs">
+                    navHTML += `<li class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs">
                         <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
-                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" class="hover:text-amber-300"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" class="hover:text-red-300"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" title="修改名稱" class="hover:text-amber-300"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" title="刪除子頁面" class="hover:text-red-300"><i class="fa-solid fa-trash text-[10px]"></i></button>
                         </div>
                     </li>`;
                 });
                 navHTML += `</ul></div>`;
             });
-            document.getElementById('sidebar-nav').innerHTML = navHTML;
+            document.getElementById('sidebar-nav').innerHTML = navHTML || `<div class="text-slate-500 text-xs text-center py-4">無科目資料，請點擊上方按鈕新增</div>`;
         }
 
+        /* 選擇並呈現子頁面 */
         function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncCurrentPageDOM();
 
@@ -369,13 +443,13 @@
                 container.innerHTML = allLawsMap[subId];
             } else {
                 container.innerHTML = `
-                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative" id="card_default">
+                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">《${title}》範例條文</h3>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">《${title}》標題 (點此編輯)</h3>
                         </div>
                         <div class="law-card-content space-y-2 text-sm text-slate-800">
                             <div class="law-item-section group flex justify-between items-start">
-                                <span contenteditable="true" onblur="syncCurrentPageDOM()">第 1 項內容：點擊此處編輯項文字...</span>
+                                <span contenteditable="true" onblur="syncCurrentPageDOM()">第 1 項：點擊此處編輯內文...</span>
                                 <button onclick="deleteSection(this)" title="刪除此項" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         </div>
@@ -388,7 +462,7 @@
             if(shouldSync) saveAllToStorage(false);
         }
 
-        /* 重新產生右側精簡索引目錄 */
+        /* 重新產生右側精簡索引 */
         function refreshQuickIndex() {
             const container = document.getElementById('laws-container-inner');
             const indexBox = document.getElementById('quick-index-list');
@@ -396,7 +470,7 @@
 
             const elements = container.querySelectorAll('.chapter-header, .law-card');
             if (elements.length === 0) {
-                indexBox.innerHTML = `<p class="text-slate-400 italic">尚無章節或條文...</p>`;
+                indexBox.innerHTML = `<p class="text-slate-400 italic">尚無索引資料...</p>`;
                 return;
             }
 
@@ -416,7 +490,6 @@
             indexBox.innerHTML = indexHTML;
         }
 
-        /* 刪除「項」或「款」段落 */
         function deleteSection(btn) {
             const section = btn.closest('.law-item-section, .law-subitem-section');
             if (section) {
@@ -426,7 +499,6 @@
             }
         }
 
-        /* 手動新增章節標題 (非卡片) */
         function addNewChapterHeader() {
             const container = document.getElementById('laws-container-inner');
             const chapterHTML = `
@@ -449,7 +521,6 @@
             }
         }
 
-        /* 解析匯入全文：識別章節與條項款 */
         function parseAndBatchCreateLaws() {
             const rawText = document.getElementById('custom-law-text').value.trim();
             if (!rawText) return alert("請貼上法規全文或上傳檔案！");
@@ -640,6 +711,121 @@
             }
         }
 
+        function editCategoryName(catIdx) {
+            const cat = systemData.exams[currentExamIndex].categories[catIdx];
+            const newName = prompt("請輸入新的主頁面名稱：", cat.title);
+            if (newName && newName.trim() !== "") {
+                cat.title = newName.trim();
+                updateViewData();
+                saveAllToStorage(false);
+            }
+        }
+
+        function deleteCategory(catIdx) {
+            const cat = systemData.exams[currentExamIndex].categories[catIdx];
+            if (confirm(`確定要刪除主頁面「${cat.title}」及其底下的所有子頁面嗎？`)) {
+                systemData.exams[currentExamIndex].categories.splice(catIdx, 1);
+                updateViewData();
+                saveAllToStorage(false);
+            }
+        }
+
+        function editSubpageName(catIdx, subIdx) {
+            const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
+            const newName = prompt("請輸入新的子頁面名稱：", sub.title);
+            if (newName && newName.trim() !== "") {
+                sub.title = newName.trim();
+                if (sub.id === activeSubpageId) {
+                    document.getElementById('current-sublaw-title').innerText = sub.title;
+                }
+                updateViewData();
+                saveAllToStorage(false);
+            }
+        }
+
+        function deleteSubpage(catIdx, subIdx) {
+            const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
+            if (confirm(`確定要刪除子頁面「${sub.title}」嗎？`)) {
+                delete allLawsMap[sub.id];
+                delete allNotesMap[sub.id];
+                systemData.exams[currentExamIndex].categories[catIdx].subpages.splice(subIdx, 1);
+                
+                if (sub.id === activeSubpageId) {
+                    const firstSub = systemData.exams[currentExamIndex].categories[0]?.subpages[0];
+                    if (firstSub) {
+                        selectSubpage(firstSub.id, firstSub.title);
+                    } else {
+                        document.getElementById('laws-container-inner').innerHTML = '<div class="text-slate-400 text-sm">請點擊左側「新增子頁面」開始使用。</div>';
+                    }
+                } else {
+                    updateViewData();
+                }
+                saveAllToStorage(false);
+            }
+        }
+
+        function openAddPageModal(mode) {
+            modalMode = mode;
+            editingSubId = null;
+            document.getElementById('page-modal').classList.remove('hidden');
+            const mainField = document.getElementById('modal-field-main');
+            const subField = document.getElementById('modal-field-sub');
+            const parentSelect = document.getElementById('select-parent-main');
+            const currentExam = systemData.exams[currentExamIndex];
+
+            parentSelect.innerHTML = currentExam.categories.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+
+            if (mode === 'main') {
+                document.getElementById('modal-title').innerText = '新增主頁面';
+                mainField.classList.remove('hidden');
+                subField.classList.add('hidden');
+            } else {
+                document.getElementById('modal-title').innerText = '新增子頁面';
+                subField.classList.remove('hidden');
+                mainField.classList.add('hidden');
+            }
+        }
+
+        function openMoveSubModal(currentCatId, subId = null, subTitle = '') {
+            modalMode = 'move_sub';
+            editingSubId = subId;
+            document.getElementById('page-modal').classList.remove('hidden');
+            document.getElementById('modal-field-main').classList.add('hidden');
+            document.getElementById('modal-field-sub').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = subId ? `調整子頁面位置：${subTitle}` : '新增子頁面';
+            document.getElementById('input-sub-title').value = subTitle || '';
+
+            const parentSelect = document.getElementById('select-parent-main');
+            parentSelect.innerHTML = systemData.exams[currentExamIndex].categories.map(c => `<option value="${c.id}" ${c.id === currentCatId ? 'selected' : ''}>${c.title}</option>`).join('');
+        }
+
+        function closePageModal() { document.getElementById('page-modal').classList.add('hidden'); }
+
+        function confirmPageModal() {
+            const currentExam = systemData.exams[currentExamIndex];
+            if (modalMode === 'main') {
+                const title = document.getElementById('input-main-title').value.trim();
+                if (title) currentExam.categories.push({ id: "cat_" + Date.now(), title: title, subpages: [] });
+            } else if (modalMode === 'sub' || modalMode === 'move_sub') {
+                const subTitle = document.getElementById('input-sub-title').value.trim();
+                const targetCatId = document.getElementById('select-parent-main').value;
+                if (!subTitle) return alert('請輸入子頁面名稱');
+
+                if (editingSubId) {
+                    currentExam.categories.forEach(cat => { cat.subpages = cat.subpages.filter(s => s.id !== editingSubId); });
+                }
+                const targetCat = currentExam.categories.find(c => c.id === targetCatId);
+                if (targetCat) {
+                    const newSubId = editingSubId || ("sub_" + Date.now());
+                    targetCat.subpages.push({ id: newSubId, title: subTitle });
+                    selectSubpage(newSubId, subTitle);
+                }
+            }
+            closePageModal();
+            updateViewData();
+            saveAllToStorage(false);
+        }
+
         function toggleBatchSelectMode() {
             isBatchSelectMode = !isBatchSelectMode;
             const checkboxes = document.querySelectorAll('.card-select-checkbox');
@@ -700,14 +886,6 @@
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
         function switchTab(tabId) {}
-        function switchMode(m) {}
-        function editCategoryName(idx) {}
-        function deleteCategory(idx) {}
-        function editSubpageName(cIdx, sIdx) {}
-        function deleteSubpage(cIdx, sIdx) {}
-        function openAddPageModal(mode) {}
-        function closePageModal() {}
-        function confirmPageModal() {}
     </script>
 </body>
 </html>
