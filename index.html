@@ -61,7 +61,6 @@
                         <div>
                             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
                                 <span id="current-sublaw-title">警械使用條例</span>
-                                <span class="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full border border-red-200">近3年有新修條文</span>
                             </h1>
                         </div>
                         <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
@@ -117,17 +116,8 @@
                             </div>
                         </div>
 
-                        <!-- 預設提示卡片（若本頁面尚未匯入條文） -->
-                        <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold text-slate-900">尚未匯入條文</h3>
-                                <button onclick="deleteLawCard(this)" title="刪除卡片" class="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                            <div class="text-sm leading-relaxed text-slate-500 p-2">
-                                請點擊右上角「上傳/匯入本頁面法規全文」按鈕，貼入此科目的條文內容。
-                            </div>
+                        <!-- 動態法條卡片渲染區（切換子頁面時會清空替換） -->
+                        <div id="laws-container-inner" class="space-y-6">
                         </div>
 
                     </div>
@@ -324,11 +314,6 @@
                     <label class="text-xs font-bold text-slate-700 block mb-1">或直接貼上法規全文內容：</label>
                     <textarea id="custom-law-text" class="w-full h-48 p-3 border rounded-lg text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 font-sans" placeholder="例如：&#10;第 1 條 為維護治安...&#10;第 2 條 警察發布命令..."></textarea>
                 </div>
-
-                <div class="flex items-center gap-2 bg-red-50 p-2.5 rounded-lg border border-red-100">
-                    <input type="checkbox" id="custom-law-is-new" class="w-4 h-4 text-blue-600 rounded">
-                    <label for="custom-law-is-new" class="text-xs text-red-600 font-bold">全篇標記為「近 3 年新修法規」（自動生成亮紅提醒標籤）</label>
-                </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t">
@@ -439,18 +424,19 @@
         /* 切換子頁面：自動切換與呈現該子頁面的獨立資料 */
         function selectSubpage(subId, title) {
             // 切換前先暫存舊頁面 HTML 變更
-            if (activeSubpageId) {
-                allLawsMap[activeSubpageId] = document.getElementById('laws-card-list').innerHTML;
+            if (activeSubpageId && document.getElementById('laws-container-inner')) {
+                allLawsMap[activeSubpageId] = document.getElementById('laws-container-inner').innerHTML;
             }
 
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             
             // 載入當前子頁面的獨立法條卡片
-            if (allLawsMap[subId]) {
-                document.getElementById('laws-card-list').innerHTML = allLawsMap[subId];
+            const container = document.getElementById('laws-container-inner');
+            if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
+                container.innerHTML = allLawsMap[subId];
             } else {
-                document.getElementById('laws-card-list').innerHTML = `
+                container.innerHTML = `
                     <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="text-lg font-bold text-slate-900">《${title}》尚未匯入條文</h3>
@@ -469,10 +455,40 @@
             updateViewData();
         }
 
+        /* 單一法條獨立標記/取消「3年內新修條文」紅框標籤功能 */
+        function toggleSingleNewLawBadge(btnElement) {
+            const card = btnElement.closest('.law-card');
+            if (!card) return;
+
+            const existingBadge = card.querySelector('.new-law-badge');
+            const titleElement = card.querySelector('.law-card-title');
+
+            if (existingBadge) {
+                // 原本有新修標籤 -> 切換為普通標籤
+                existingBadge.remove();
+                card.classList.remove('border-red-200');
+                card.classList.add('border-slate-200');
+                if (titleElement) {
+                    titleElement.classList.remove('text-red-600');
+                    titleElement.classList.add('text-slate-900');
+                }
+            } else {
+                // 原本是普通標籤 -> 套用亮紅新修法標籤
+                const badgeHTML = `<div class="new-law-badge absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>`;
+                card.insertAdjacentHTML('afterbegin', badgeHTML);
+                card.classList.remove('border-slate-200');
+                card.classList.add('border-red-200');
+                if (titleElement) {
+                    titleElement.classList.remove('text-slate-900');
+                    titleElement.classList.add('text-red-600');
+                }
+            }
+        }
+
         /* 刪除卡片 */
         function deleteLawCard(btnElement) {
             if (confirm("確定要刪除這張法條卡片嗎？（刪除後請記得點擊「儲存全站」按鈕保存）")) {
-                const card = btnElement.closest('.law-card, .bg-white');
+                const card = btnElement.closest('.law-card');
                 if (card) card.remove();
             }
         }
@@ -512,7 +528,6 @@
 
         function parseAndBatchCreateLaws() {
             const rawText = document.getElementById('custom-law-text').value.trim();
-            const isNew = document.getElementById('custom-law-is-new').checked;
             if (!rawText) return alert("請貼上法規全文或上傳檔案！");
 
             const articleRegex = /(第\s*[\d\-\u4e00-\u4e5d\u767e\u5343]+\s*條[^\n]*)/g;
@@ -529,23 +544,22 @@
                 }
             }
 
-            const cardList = document.getElementById('laws-card-list');
-            cardList.innerHTML = ""; // 覆蓋原本預設卡片
+            const container = document.getElementById('laws-container-inner');
+            container.innerHTML = ""; // 覆蓋原本預設卡片
 
             let count = 0;
             parsedArticles.forEach(item => {
                 count++;
                 const newCardId = "law-content-" + Date.now() + "-" + count;
-                const borderClass = isNew ? 'border-red-200' : 'border-slate-200';
-                const badgeHTML = isNew ? `<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-bl-lg font-bold">3年內新修條文</div>` : '';
-                const titleClass = isNew ? 'text-red-600' : 'text-slate-900';
 
                 const newCardHTML = `
-                    <div class="law-card bg-white rounded-xl border ${borderClass} p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
-                        ${badgeHTML}
+                    <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden">
                         <div class="flex justify-between items-start mb-2 pt-1">
-                            <h3 class="text-lg font-bold ${titleClass} pr-12">${item.title}</h3>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12">${item.title}</h3>
                             <div class="flex items-center gap-2">
+                                <button onclick="toggleSingleNewLawBadge(this)" title="標記/取消為近3年新修法" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium">
+                                    <i class="fa-solid fa-flag"></i> 新修法
+                                </button>
                                 <button onclick="showRelatedLaws('解析匯入法條。', ['《相關子法》', '《實務判例》'])" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
                                     <i class="fa-solid fa-link"></i> 檢視關聯法條
                                 </button>
@@ -559,14 +573,13 @@
                         </div>
                     </div>
                 `;
-                cardList.insertAdjacentHTML('beforeend', newCardHTML);
+                container.insertAdjacentHTML('beforeend', newCardHTML);
             });
 
             // 更新至 Map
-            allLawsMap[activeSubpageId] = cardList.innerHTML;
+            allLawsMap[activeSubpageId] = container.innerHTML;
 
             document.getElementById('custom-law-text').value = "";
-            document.getElementById('custom-law-is-new').checked = false;
             closeLawUploadModal();
             alert(`🎉 成功解析 ${count} 則法條並呈現於本頁面！請記得點擊左側「儲存全站」按鈕。`);
         }
@@ -818,8 +831,8 @@
       /* 全站按科目隔離儲存函數 */
       window.saveAllSystemData = async function() {
           // 儲存當前頁面的最新卡片 HTML 到 Map 中
-          if (activeSubpageId && document.getElementById('laws-card-list')) {
-              allLawsMap[activeSubpageId] = document.getElementById('laws-card-list').innerHTML;
+          if (activeSubpageId && document.getElementById('laws-container-inner')) {
+              allLawsMap[activeSubpageId] = document.getElementById('laws-container-inner').innerHTML;
           }
 
           try {
