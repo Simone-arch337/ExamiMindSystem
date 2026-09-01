@@ -46,8 +46,8 @@
             <div class="p-4 border-b border-slate-800 space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">當前目標考試</label>
-                    <span id="cloud-status" class="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700 flex items-center gap-1">
-                        <i class="fa-solid fa-cloud"></i> 雲端同步中
+                    <span id="cloud-status" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-spinner fa-spin"></i> 初始化中
                     </span>
                 </div>
                 
@@ -215,7 +215,7 @@
         </div>
     </div>
 
-    <!-- 載入 Firebase 9+ Compat 相容模組 -->
+    <!-- Firebase 腳本 -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -230,8 +230,13 @@
             measurementId: "G-ZE1TPG3L7P"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch (e) {
+            console.warn("Firebase 初始化失敗：", e);
+        }
 
         let systemData = {
             exams: [
@@ -261,29 +266,56 @@
         let modalMode = "";
         let editingSubId = null;
         let isBatchSelectMode = false;
-        let isRemoteUpdating = false;
 
-        /* 【強化版：雲端儲存與寫入防爆機制】 */
+        /* 本地 LocalStorage 儲存備份 */
+        function saveToLocalFallback() {
+            try {
+                localStorage.setItem("em_backup_systemData", JSON.stringify(systemData));
+                localStorage.setItem("em_backup_allLawsMap", JSON.stringify(allLawsMap));
+                localStorage.setItem("em_backup_allNotesMap", JSON.stringify(allNotesMap));
+            } catch(e) {}
+        }
+
+        function loadFromLocalFallback() {
+            try {
+                const s = localStorage.getItem("em_backup_systemData");
+                const l = localStorage.getItem("em_backup_allLawsMap");
+                const n = localStorage.getItem("em_backup_allNotesMap");
+                if (s) systemData = JSON.parse(s);
+                if (l) allLawsMap = JSON.parse(l);
+                if (n) allNotesMap = JSON.parse(n);
+            } catch(e) {}
+        }
+
+        /* 【雲端 + 本機雙軌儲存】 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
+            saveToLocalFallback(); // 優先寫入本機備份
+
             const statusEl = document.getElementById('cloud-status');
             if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 儲存中...`;
 
+            if (!db) {
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 已存本機`;
+                if (showAlert) alert("已儲存至本機瀏覽器（未連線至雲端）。");
+                return;
+            }
+
             try {
-                // 將物件轉換為可安全的 JSON 字串結構上傳，避免 DOM 殘留造成 Firestore 寫入報錯
+                // 將全站狀態打包寫入雲端
                 await db.collection('exam_data').doc('user_main_data').set({
                     systemData: systemData,
                     allLawsMap: allLawsMap,
                     allNotesMap: allNotesMap,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                });
 
-                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步`;
-                if (showAlert) alert("🎉 跨裝置雲端資料已成功儲存！其他裝置畫面已同步更新。");
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
+                if (showAlert) alert("🎉 跨裝置雲端資料已成功同步！");
             } catch (e) {
-                console.error("雲端儲存失敗：", e);
-                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 同步失敗`;
-                alert("❌ 儲存失敗！請檢查您的 Firebase Firestore Rules 是否改為測試模式 (allow read, write: if true;)");
+                console.error("Firebase Firestore 寫入錯誤詳情：", e);
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-floppy-disk text-amber-400"></i> 已備份本機`;
+                if (showAlert) alert("⚠️ 雲端同步受阻（已自動轉存至本機）。請至 Firebase Console 檢查 Firestore 資料庫是否已點擊「Create Database」與發布 Rules。");
             }
         }
 
@@ -294,16 +326,22 @@
             }
         }
 
-        /* 【跨裝置即時廣播與監聽】 */
+        /* 雲端即時連線監聽 */
         function initCloudSync() {
+            loadFromLocalFallback(); // 先載入本機資料呈現
+            renderExamSelect();
+            updateViewData();
+
+            if (!db) return;
+
             db.collection('exam_data').doc('user_main_data').onSnapshot(doc => {
                 if (doc.exists) {
-                    isRemoteUpdating = true;
                     const data = doc.data();
                     if (data.systemData) systemData = data.systemData;
                     if (data.allLawsMap) allLawsMap = data.allLawsMap;
                     if (data.allNotesMap) allNotesMap = data.allNotesMap;
 
+                    saveToLocalFallback();
                     renderExamSelect();
                     updateViewData();
                     
@@ -317,12 +355,14 @@
 
                     const statusEl = document.getElementById('cloud-status');
                     if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-emerald-300"></i> 雲端已同步`;
-                    isRemoteUpdating = false;
+                } else {
+                    const statusEl = document.getElementById('cloud-status');
+                    if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-slate-400"></i> 雲端尚無資料`;
                 }
             }, err => {
-                console.error("雲端監聽失敗：", err);
+                console.warn("雲端監聽失敗，切換為本機模式：", err);
                 const statusEl = document.getElementById('cloud-status');
-                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 權限/連線錯誤`;
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 本機模式`;
             });
         }
 
