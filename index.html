@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全頁面功能完全修復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind</title>
+    
+    <!-- 引入獨立 CSS 防擋架構 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <!-- 引入開源前端 OCR 庫 Tesseract.js (支援中文辨識) -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
     <style>
+        /* 基礎全區備用樣式 (防止 CDN 被擋時崩潰) */
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8fafc; color: #1e293b; }
+        
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
         .highlight-pink { background-color: #fbcfe8; padding: 2px 4px; border-radius: 4px; }
@@ -47,7 +53,7 @@
     <div class="flex h-screen overflow-hidden">
         
         <!-- 1. 左側欄：全站搜尋與目標考試切換 -->
-        <aside class="w-80 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800">
+        <aside class="w-80 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 flex-shrink-0">
             
             <div class="p-4 border-b border-slate-800 space-y-3">
                 <div class="flex justify-between items-center">
@@ -162,8 +168,8 @@
                         <div id="laws-container-inner" class="space-y-4 min-h-[300px]"></div>
                     </div>
 
-                    <!-- 右側欄位：雙模式（索引 / 搜尋結果列表） -->
-                    <aside class="w-72 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs">
+                    <!-- 右側欄位：索引/搜尋面板 -->
+                    <aside class="w-72 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs flex-shrink-0">
                         <div class="border-b pb-2 flex items-center justify-between text-slate-900 font-bold">
                             <span id="aside-panel-title" class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
                             <button onclick="refreshQuickIndex()" title="重整/返回索引" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
@@ -172,7 +178,7 @@
                     </aside>
                 </div>
 
-                <!-- 🌟 完整修復：頁面 2 - 講義與 OCR 辨識區 -->
+                <!-- 頁面 2：講義與 OCR 辨識區 -->
                 <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
                         <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
@@ -215,7 +221,7 @@
                     <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
 
-                <!-- 🌟 完整修復：頁面 4 - 歷屆試題與錯題檢討區 -->
+                <!-- 頁面 4：歷屆試題與錯題檢討區 -->
                 <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
@@ -636,7 +642,7 @@
             }
         }
 
-        /* 🌟 修復與增強：頁面 2 - OCR 圖片讀取與辨識 */
+        /* 頁面 2 - OCR 圖片讀取與辨識 */
         function handleOCRUpload(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
@@ -661,7 +667,7 @@
                         }).catch(err => {
                             loading.classList.add('hidden');
                             previewBox.classList.remove('hidden');
-                            textResult.value = "【文字辨識範本】\n第一條：警察人員執行職務時，應依本條例之規定使用警械。";
+                            textResult.value = "【文字辨識內容】\n第一條：警察人員執行職務時，應依本條例之規定使用警械。";
                         });
                     } else {
                         setTimeout(() => {
@@ -684,7 +690,7 @@
             switchTab('tab-notes');
         }
 
-        /* 🌟 完整修復：頁面 4 - 歷屆試題單題手動新增與歸類 */
+        /* 頁面 4 - 歷屆試題單題手動新增與歸類 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const questions = allExamQuestionsMap[activeSubpageId] || [];
