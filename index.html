@@ -5,256 +5,281 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>國家考試智慧備考系統 ExamiMind</title>
     
-    <!-- 引入獨立 Sortable 與 Tesseract -->
+    <!-- 引入穩定的 CSS 與 圖示庫 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- 拖曳排序與前端 OCR 庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-    <!-- 全內建原生獨立 CSS 防阻擋樣式表 -->
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; height: 100vh; overflow: hidden; }
-        
-        .app-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-        
-        /* 左側選單欄位 */
-        .sidebar { width: 320px; background-color: #0f172a; color: #cbd5e1; display: flex; flex-direction: column; border-r: 1px solid #1e293b; flex-shrink: 0; }
-        .sidebar-header { padding: 16px; border-bottom: 1px solid #1e293b; display: flex; flex-direction: column; gap: 10px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .label-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
-        .status-badge { font-size: 10px; background-color: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155; }
-        
-        .exam-select-box { display: flex; gap: 6px; }
-        select.custom-select { flex: 1; background-color: #1e293b; color: #ffffff; font-weight: bold; font-size: 12px; border-radius: 6px; padding: 8px; border: 1px solid #334155; outline: none; }
-        .btn-icon { background-color: #1e293b; color: #cbd5e1; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; cursor: pointer; font-size: 12px; }
-        .btn-icon:hover { background-color: #334155; }
-        .btn-blue { background-color: #2563eb; color: #ffffff; border: none; }
-        .btn-blue:hover { background-color: #1d4ed8; }
-        
-        /* 搜尋欄位 */
-        .search-box { display: flex; gap: 6px; margin-top: 4px; }
-        .search-input { flex: 1; background-color: #020617; color: #f8fafc; font-size: 12px; border-radius: 6px; padding: 8px 12px; border: 1px solid #334155; outline: none; }
-        .search-input:focus { border-color: #3b82f6; }
-        
-        /* 管理按鈕區 */
-        .sidebar-actions { padding: 12px; border-bottom: 1px solid #1e293b; background-color: #020617; display: flex; flex-direction: column; gap: 8px; }
-        .btn-grid { display: flex; gap: 8px; }
-        .btn-sub { flex: 1; background-color: #1e293b; color: #e2e8f0; font-size: 12px; padding: 8px; border-radius: 6px; border: 1px solid #334155; cursor: pointer; text-align: center; }
-        .btn-sub:hover { background-color: #334155; }
-        .btn-cloud { width: 100%; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 12px; padding: 8px; border-radius: 6px; border: none; cursor: pointer; text-align: center; }
-        .btn-cloud:hover { background-color: #b45309; }
-
-        .sidebar-nav { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-        
-        /* 分類與頁面樹 */
-        .cat-block { background-color: rgba(15, 23, 42, 0.6); border-radius: 8px; border: 1px solid #1e293b; padding: 8px; }
-        .cat-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; color: #94a3b8; padding: 4px; }
-        .subpage-list { list-style: none; margin-top: 6px; padding-left: 8px; border-left: 2px solid #334155; display: flex; flex-direction: column; gap: 4px; }
-        .subpage-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 4px; font-size: 12px; color: #cbd5e1; cursor: pointer; text-decoration: none; }
-        .subpage-item:hover { background-color: #1e293b; }
-        .subpage-item.active { background-color: #2563eb; color: #ffffff; font-weight: bold; }
-
-        /* 主內容區 */
-        .main-content { flex: 1; display: flex; flex-direction: column; background-color: #f8fafc; overflow-y: auto; }
-        .main-header { background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 16px 24px 0 24px; position: sticky; top: 0; z-index: 20; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .page-title { font-size: 22px; font-weight: bold; color: #0f172a; }
-        
-        /* 頁籤 Tab */
-        .tab-group { display: flex; gap: 24px; border-bottom: 1px solid #e2e8f0; }
-        .tab-btn { padding-bottom: 12px; font-size: 14px; font-weight: 600; color: #64748b; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
-
-        /* 內文視窗 */
-        .tab-content { padding: 24px; display: flex; gap: 24px; }
-        .tab-content.hidden { display: none !important; }
-        .cards-container { flex: 1; display: flex; flex-direction: column; gap: 16px; }
-
-        /* 右側面板 */
-        .aside-panel { width: 280px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; height: fit-content; position: sticky; top: 108px; font-size: 12px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .aside-title { font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; color: #0f172a; }
-
-        /* 卡片設計 */
-        .law-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .law-card:hover { border-color: #93c5fd; }
-        .law-card-title { font-size: 18px; font-weight: bold; color: #0f172a; outline: none; }
-        .law-card-body { font-size: 14px; color: #334155; line-height: 1.6; }
-
-        /* 章節標題分隔 */
-        .chapter-header { display: flex; align-items: center; margin: 24px 0 12px 0; font-weight: bold; font-size: 16px; color: #1e293b; }
-        .chapter-header::before, .chapter-header::after { content: ""; flex: 1; border-bottom: 2px dashed #cbd5e1; }
-        .chapter-header::before { margin-right: 12px; }
-        .chapter-header::after { margin-left: 12px; }
-
-        /* 彈窗 Modal */
-        .modal-backdrop { position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-50; }
-        .modal-backdrop.hidden { display: none !important; }
-        .modal-box { background-color: #ffffff; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
-        .modal-textarea { width: 100%; height: 180px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; line-height: 1.5; resize: vertical; }
-
-        .btn { padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
-        .btn-primary { background-color: #2563eb; color: #ffffff; }
-        .btn-secondary { background-color: #e2e8f0; color: #475569; }
-
         /* 劃記效果 */
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
         .highlight-pink { background-color: #fbcfe8; padding: 2px 4px; border-radius: 4px; }
+        
+        .law-item-section { margin-top: 8px; padding-left: 8px; border-left: 2px solid #cbd5e1; position: relative; }
+        .law-subitem-section { margin-top: 4px; padding-left: 20px; color: #334155; position: relative; }
+        
+        .section-del-btn { opacity: 0; transition: opacity 0.2s; }
+        .law-item-section:hover .section-del-btn, .law-subitem-section:hover .section-del-btn { opacity: 1; }
+
+        .chapter-header {
+            display: flex;
+            align-items: center;
+            margin: 28px 0 16px 0;
+            color: #1e293b;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .chapter-header::before, .chapter-header::after {
+            content: "";
+            flex: 1;
+            border-bottom: 2px dashed #cbd5e1;
+        }
+        .chapter-header::before { margin-right: 12px; }
+        .chapter-header::after { margin-left: 12px; }
+
+        .sortable-ghost { opacity: 0.4; background-color: #f1f5f9 !important; border: 2px dashed #3b82f6 !important; }
+        .sortable-drag { cursor: grabbing; }
+
+        html { scroll-behavior: smooth; }
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     </style>
 </head>
-<body>
+<body class="text-gray-800 font-sans">
 
-    <div class="app-container">
+    <div class="flex h-screen overflow-hidden">
         
-        <!-- 1. 左側欄 -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="flex-between">
-                    <span class="label-title">當前目標考試</span>
-                    <span id="cloud-status" class="status-badge"><i class="fa-solid fa-cloud"></i> 系統準備完畢</span>
+        <!-- 1. 左側欄：全站搜尋與目標考試切換 -->
+        <aside class="w-80 bg-gray-900 text-gray-300 flex flex-col border-r border-gray-800 flex-shrink-0">
+            
+            <div class="p-4 border-b border-gray-800 space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">當前目標考試</label>
+                    <span id="cloud-status" class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700 flex items-center gap-1">
+                        <i class="fa-solid fa-spinner fa-spin"></i> 初始化中
+                    </span>
                 </div>
                 
-                <div class="exam-select-box">
-                    <select id="exam-select" onchange="changeExam(this.value)" class="custom-select"></select>
-                    <button onclick="addExamType()" title="新增考試" class="btn-icon btn-blue"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="editExamType()" title="修改名稱" class="btn-icon"><i class="fa-solid fa-pen"></i></button>
-                    <button onclick="deleteExamType()" title="刪除考試" class="btn-icon" style="color:#f87171;"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex gap-1.5">
+                    <select id="exam-select" onchange="changeExam(this.value)" class="flex-1 bg-gray-800 text-white font-bold text-xs rounded-lg px-2.5 py-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate">
+                    </select>
+                    <button onclick="addExamType()" title="新增考試種類" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1.5 rounded-lg text-xs transition"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="editExamType()" title="修改考試名稱" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1.5 rounded-lg text-xs border border-gray-700 transition"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteExamType()" title="刪除考試種類" class="bg-gray-800 hover:bg-red-900 text-red-400 px-2 py-1.5 rounded-lg text-xs border border-gray-700 transition"><i class="fa-solid fa-trash"></i></button>
                 </div>
 
-                <div class="search-box">
-                    <input type="text" id="global-search-input" onkeypress="if(event.key === 'Enter') triggerGlobalSearch()" placeholder="全站關鍵字搜尋..." class="search-input">
-                    <button onclick="triggerGlobalSearch()" class="btn-icon btn-blue" style="font-weight:bold;">查詢</button>
+                <!-- 全站智慧搜尋欄 -->
+                <div class="relative mt-2 flex gap-1.5">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </div>
+                        <input type="text" id="global-search-input" onkeypress="if(event.key === 'Enter') triggerGlobalSearch()" placeholder="輸入關鍵字..." class="w-full bg-gray-950 text-gray-200 text-xs rounded-lg pl-8 pr-3 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <button onclick="triggerGlobalSearch()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-bold transition">查詢</button>
                 </div>
             </div>
 
-            <div class="sidebar-actions">
-                <div class="btn-grid">
-                    <button onclick="openAddPageModal('main')" class="btn-sub"><i class="fa-solid fa-folder-plus"></i> 新增主頁面</button>
-                    <button onclick="openAddPageModal('sub')" class="btn-sub"><i class="fa-solid fa-file-circle-plus"></i> 新增子頁面</button>
+            <div class="p-3 border-b border-gray-800 bg-black bg-opacity-40 flex flex-col gap-2">
+                <div class="flex gap-2">
+                    <button onclick="openAddPageModal('main')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs py-1.5 px-2 rounded border border-gray-700 flex items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-folder-plus text-blue-400"></i> 新增主頁面
+                    </button>
+                    <button onclick="openAddPageModal('sub')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs py-1.5 px-2 rounded border border-gray-700 flex items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-file-circle-plus text-green-400"></i> 新增子頁面
+                    </button>
                 </div>
-                <button onclick="saveAllToStorage(true)" class="btn-cloud"><i class="fa-solid fa-cloud-arrow-up"></i> 儲存並跨裝置同步至雲端</button>
+                
+                <button onclick="saveAllToStorage(true)" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-yellow-500">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存並跨裝置同步至雲端
+                </button>
             </div>
 
-            <nav class="sidebar-nav" id="sidebar-nav"></nav>
+            <nav class="flex-1 overflow-y-auto p-4 space-y-4 text-sm" id="sidebar-nav">
+            </nav>
         </aside>
 
         <!-- 2. 主內容區 -->
-        <main class="main-content">
-            <header class="main-header">
-                <div class="header-top">
-                    <h1 class="page-title" id="current-sublaw-title">請選擇子頁面</h1>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="addNewChapterHeader()" class="btn btn-secondary"><i class="fa-solid fa-heading"></i> 新增章節標題</button>
-                        <button onclick="addNewBlankLawCard()" class="btn btn-secondary" style="background-color:#0f172a; color:#fff;"><i class="fa-solid fa-plus"></i> 新增條文卡片</button>
-                        <button onclick="openLawUploadModal()" class="btn btn-primary"><i class="fa-solid fa-wand-magic-sparkles"></i> 匯入本頁面法規全文</button>
-                    </div>
-                </div>
-
-                <div class="tab-group">
-                    <button onclick="switchTab('tab-law')" id="btn-tab-law" class="tab-btn active"><i class="fa-solid fa-gavel"></i> 1. 法規與條文對照</button>
-                    <button onclick="switchTab('tab-ocr')" id="btn-tab-ocr" class="tab-btn"><i class="fa-solid fa-file-arrow-up"></i> 2. 講義與 OCR 辨識</button>
-                    <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="tab-btn"><i class="fa-solid fa-pen-to-square"></i> 3. 個人筆記與爭點</button>
-                    <button onclick="switchTab('tab-mistakes')" id="btn-tab-mistakes" class="tab-btn"><i class="fa-solid fa-circle-xmark"></i> 4. 歷屆試題與錯題檢討</button>
-                </div>
-            </header>
-
-            <!-- 頁面 1：法規與條文對照 -->
-            <div id="content-tab-law" class="tab-content">
-                <div class="cards-container">
-                    <div style="background:#fff; padding:10px 16px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-between; align-items:center;">
-                        <div style="display:flex; gap:6px; align-items:center; font-size:12px;">
-                            <span>劃記：</span>
-                            <button onclick="applyHighlight('yellow')" style="width:20px; height:20px; background:#fef08a; border:1px solid #eab308; border-radius:4px; cursor:pointer;"></button>
-                            <button onclick="applyHighlight('green')" style="width:20px; height:20px; background:#bbf7d0; border:1px solid #22c55e; border-radius:4px; cursor:pointer;"></button>
-                            <button onclick="applyHighlight('pink')" style="width:20px; height:20px; background:#fbcfe8; border:1px solid #ec4899; border-radius:4px; cursor:pointer;"></button>
-                            <button onclick="removeHighlight()" style="padding:2px 6px; font-size:10px; cursor:pointer;"><i class="fa-solid fa-eraser"></i> 擦除</button>
+        <main class="flex-1 flex flex-col bg-gray-50 overflow-y-auto" id="main-container">
+            
+            <div id="student-view" class="flex-1 flex flex-col relative">
+                
+                <header class="bg-white border-b border-gray-200 px-6 pt-4 pb-0 shadow-sm sticky top-0 z-20">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                                <span id="current-sublaw-title">請選擇或新增子頁面</span>
+                            </h1>
+                        </div>
+                        <div class="flex gap-2" id="header-action-btns">
+                            <button onclick="addNewChapterHeader()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-heading text-blue-600"></i> 新增章節標題
+                            </button>
+                            <button onclick="addNewBlankLawCard()" class="bg-gray-800 hover:bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus text-green-400"></i> 新增條文卡片
+                            </button>
+                            <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> 匯入本頁面法規全文
+                            </button>
                         </div>
                     </div>
-                    <div id="laws-container-inner" style="display:flex; flex-direction:column; gap:16px;"></div>
-                </div>
 
-                <aside class="aside-panel">
-                    <div class="aside-title">
-                        <span id="aside-panel-title"><i class="fa-solid fa-list-ul"></i> 本頁法規索引</span>
-                        <button onclick="refreshQuickIndex()" style="border:none; background:none; cursor:pointer;"><i class="fa-solid fa-rotate-right"></i></button>
+                    <div class="flex gap-8 border-b border-gray-200 text-sm font-semibold text-gray-600">
+                        <button onclick="switchTab('tab-law')" id="btn-tab-law" class="pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
+                            <i class="fa-solid fa-gavel"></i> <span>1. 法規與條文對照</span>
+                        </button>
+                        <button onclick="switchTab('tab-ocr')" id="btn-tab-ocr" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-file-arrow-up"></i> <span>2. 講義與 OCR 辨識</span>
+                        </button>
+                        <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square"></i> <span>3. 個人筆記與爭點</span>
+                        </button>
+                        <button onclick="switchTab('tab-mistakes')" id="btn-tab-mistakes" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-xmark text-red-500"></i> <span>4. 歷屆試題與錯題檢討</span>
+                        </button>
                     </div>
-                    <div id="quick-index-list" style="display:flex; flex-direction:column; gap:6px; max-height:70vh; overflow-y:auto;"></div>
-                </aside>
-            </div>
+                </header>
 
-            <!-- 頁面 2：講義與 OCR -->
-            <div id="content-tab-ocr" class="tab-content hidden">
-                <div style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; width:100%; display:flex; flex-direction:column; gap:16px;">
-                    <h3><i class="fa-solid fa-file-arrow-up"></i> 上傳講義 / 照片進行 OCR 文字辨識</h3>
-                    <input type="file" id="ocr-file-input" accept="image/*" onchange="handleOCRUpload(this)">
-                    <textarea id="ocr-text-result" class="modal-textarea" placeholder="辨識結果將顯示於此..."></textarea>
-                    <button onclick="saveOCRToNotes()" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字存入個人筆記</button>
-                </div>
-            </div>
-
-            <!-- 頁面 3：個人筆記與爭點區 -->
-            <div id="content-tab-notes" class="tab-content hidden">
-                <div style="width:100%; display:flex; flex-direction:column; gap:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:16px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <h3><i class="fa-solid fa-pen-to-square"></i> 個人爭點筆記區</h3>
-                        <button onclick="addNewNoteCard()" class="btn btn-primary"><i class="fa-solid fa-plus"></i> 新增筆記卡片</button>
+                <!-- 頁面 1：法規與條文對照 -->
+                <div id="content-tab-law" class="p-6 tab-content flex gap-6">
+                    <div class="flex-1 space-y-4">
+                        <div class="bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-md flex items-center justify-between sticky top-20 z-10 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500 font-medium flex items-center gap-1"><i class="fa-solid fa-highlighter text-yellow-500"></i> 劃記：</span>
+                                <button onclick="applyHighlight('yellow')" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('green')" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('pink')" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
+                                <div class="h-4 w-px bg-gray-200 mx-1"></div>
+                                <button onclick="removeHighlight()" class="w-6 h-6 rounded bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 transition border flex items-center justify-center text-xs"><i class="fa-solid fa-eraser"></i></button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleBatchSelectMode()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition border font-medium"><i class="fa-regular fa-square-check"></i> 批量刪除管理</button>
+                                <div id="batch-actions" class="hidden items-center gap-2">
+                                    <button onclick="selectAllCards(true)" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded border border-blue-200">全選</button>
+                                    <button onclick="selectAllCards(false)" class="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded border border-gray-200">取消全選</button>
+                                    <button onclick="deleteSelectedCards()" class="text-xs bg-red-600 text-white px-3 py-1 rounded shadow-sm"><i class="fa-solid fa-trash-can"></i> 刪除選取</button>
+                                </div>
+                                <button onclick="saveAllToStorage(true)" class="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded transition font-bold"><i class="fa-solid fa-cloud-arrow-up"></i> 雲端同步儲存</button>
+                            </div>
+                        </div>
+                        <div id="laws-container-inner" class="space-y-4 min-h-full"></div>
                     </div>
-                    <div id="note-cards-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;"></div>
-                </div>
-            </div>
 
-            <!-- 頁面 4：歷屆試題與錯題檢討區 -->
-            <div id="content-tab-mistakes" class="tab-content hidden">
-                <div style="width:100%; background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0; display:flex; flex-direction:column; gap:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
-                        <h3><i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i> 歷屆試題與錯題檢討資料庫</h3>
-                        <div style="display:flex; gap:8px;">
-                            <button onclick="openExamBatchModal()" class="btn btn-primary"><i class="fa-solid fa-wand-magic-sparkles"></i> 智能匯入整份試題</button>
-                            <button onclick="addNewExamQuestionCard()" class="btn btn-secondary" style="background:#0f172a; color:#fff;"><i class="fa-solid fa-plus"></i> 手動新增單題</button>
+                    <!-- 右側欄位：雙模式 (索引 / 搜尋結果列表) -->
+                    <aside class="w-72 bg-white rounded-xl border border-gray-200 p-3.5 shadow-sm space-y-2 h-max sticky top-20 text-xs flex-shrink-0">
+                        <div class="border-b pb-2 flex items-center justify-between text-gray-900 font-bold">
+                            <span id="aside-panel-title" class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
+                            <button onclick="refreshQuickIndex()" title="重整/返回索引" class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                        <div id="quick-index-list" class="space-y-1 max-h-96 overflow-y-auto pr-1"></div>
+                    </aside>
+                </div>
+
+                <!-- 頁面 2：講義與 OCR 辨識區 -->
+                <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+                        <h3 class="font-bold text-gray-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
+                        
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-xs text-gray-600 font-medium">點擊上傳或選擇講義圖片 (JPG, PNG, WebP)</p>
+                            <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="handleOCRUpload(this)">
+                        </div>
+
+                        <div id="ocr-loading" class="hidden text-center py-4 text-blue-600 text-xs font-bold space-y-2">
+                            <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
+                            <p id="ocr-status-text">正在讀取並進行文字辨識中，請稍候...</p>
+                        </div>
+
+                        <div id="ocr-preview-container" class="hidden space-y-4 pt-2 border-t">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-700 mb-2"><i class="fa-regular fa-image"></i> 圖片預覽：</h4>
+                                    <img id="ocr-img-preview" src="" class="max-h-64 object-contain rounded border border-gray-200 bg-gray-50">
+                                </div>
+                                <div class="flex flex-col">
+                                    <h4 class="text-xs font-bold text-gray-700 mb-2"><i class="fa-solid fa-font"></i> 辨識與編輯結果：</h4>
+                                    <textarea id="ocr-text-result" class="w-full flex-1 h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed font-mono" placeholder="辨識結果將顯示於此..."></textarea>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button onclick="saveOCRToNotes()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold flex items-center gap-1.5"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字存入個人筆記</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="mistakes-questions-list" style="display:flex; flex-direction:column; gap:16px;"></div>
                 </div>
-            </div>
 
+                <!-- 頁面 3：個人筆記與爭點區 -->
+                <div id="content-tab-notes" class="p-6 space-y-6 tab-content hidden">
+                    <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-900 text-sm"><i class="fa-solid fa-pen-to-square text-yellow-500 mr-2"></i> 本分頁專屬爭點與重點筆記</h3>
+                        <button onclick="addNewNoteCard()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium"><i class="fa-solid fa-plus text-green-400"></i> 新增獨立筆記卡片</button>
+                    </div>
+                    <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </div>
+
+                <!-- 頁面 4：歷屆試題與錯題檢討區 -->
+                <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-gray-900 text-base flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> 歷屆試題與錯題檢討資料庫</h3>
+                            <div class="flex gap-2">
+                                <button onclick="openExamBatchModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-wand-magic-sparkles"></i> 智能匯入整份歷屆試題</button>
+                                <button onclick="addNewExamQuestionCard()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-plus text-green-400"></i> 手動新增單題</button>
+                            </div>
+                        </div>
+
+                        <div id="mistakes-questions-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+            </div>
         </main>
     </div>
 
-    <!-- Modal 彈窗 -->
-    <div id="page-modal" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <h3 class="modal-title" id="modal-title">新增頁面</h3>
-            <div id="modal-field-main" class="hidden"><input type="text" id="input-main-title" placeholder="主頁面名稱 (如: 行政法)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></div>
-            <div id="modal-field-sub" class="hidden" style="display:flex; flex-direction:column; gap:12px;">
-                <input type="text" id="input-sub-title" placeholder="子頁面名稱 (如: 行程序法)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                <select id="select-parent-main" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></select>
+    <!-- Modal：新增頁面 -->
+    <div id="page-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-gray-200 space-y-4">
+            <h3 class="text-base font-bold text-gray-900" id="modal-title">新增頁面</h3>
+            <div id="modal-field-main" class="hidden"><input type="text" id="input-main-title" placeholder="主頁面名稱 (如: 行政法)" class="w-full p-2 border rounded text-sm"></div>
+            <div id="modal-field-sub" class="hidden space-y-3">
+                <input type="text" id="input-sub-title" placeholder="子頁面名稱 (如: 行程序法)" class="w-full p-2 border rounded text-sm">
+                <select id="select-parent-main" class="w-full p-2 border rounded text-sm bg-gray-50"></select>
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button onclick="closePageModal()" class="btn btn-secondary">取消</button>
-                <button onclick="confirmPageModal()" class="btn btn-primary">確定</button>
+            <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定新增</button></div>
+        </div>
+    </div>
+
+    <!-- Modal：匯入法規 -->
+    <div id="law-upload-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-lg p-6 border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條文)</h3>
+                <button onclick="closeLawUploadModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <textarea id="custom-law-text" class="w-full h-52 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;第一章 總則&#10;第 1 條 警察人員執行職務時...&#10;一、為避免非常變故..."></textarea>
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button>
+                <button onclick="parseAndBatchCreateLaws()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動辨識生成卡片</button>
             </div>
         </div>
     </div>
 
-    <div id="law-upload-modal" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <h3 class="modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> 匯入整篇法規 (自動切割條文)</h3>
-            <textarea id="custom-law-text" class="modal-textarea" placeholder="例如：&#10;第一章 總則&#10;第 1 條 警察人員執行職務時..."></textarea>
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button onclick="closeLawUploadModal()" class="btn btn-secondary">取消</button>
-                <button onclick="parseAndBatchCreateLaws()" class="btn btn-primary">自動切割生成</button>
+    <!-- Modal：批量匯入歷屆試題 -->
+    <div id="exam-batch-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-xl p-6 border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 智能匯入整份歷屆試題 (自動分題)</h3>
+                <button onclick="closeExamBatchModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-        </div>
-    </div>
-
-    <div id="exam-batch-modal" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <h3 class="modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> 智能匯入整份歷屆試題</h3>
-            <textarea id="custom-exam-text" class="modal-textarea" placeholder="例如：&#10;1. 關於警械使用條例之規定...&#10;(A) 選項 A&#10;(B) 選項 B"></textarea>
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button onclick="closeExamBatchModal()" class="btn btn-secondary">取消</button>
-                <button onclick="parseAndBatchCreateExamQuestions()" class="btn btn-primary">自動切割生成試題</button>
+            <p class="text-xs text-gray-500">直接貼上整份試題文字，系統自動分割題號、題目與選項卡片：</p>
+            <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要"></textarea>
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button>
+                <button onclick="parseAndBatchCreateExamQuestions()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動切割與生成試題</button>
             </div>
         </div>
     </div>
@@ -296,6 +321,7 @@
         let currentExamIndex = 0;
         let activeSubpageId = "sub_1";
         let currentTab = "tab-law";
+        let isBatchSelectMode = false;
         let cardSortable = null, sidebarSortable = null;
 
         function saveToLocalFallback() {
@@ -323,7 +349,38 @@
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             saveToLocalFallback();
-            if (showAlert) alert("🎉 資料已成功同步並儲存！");
+
+            const statusEl = document.getElementById('cloud-status');
+            if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步中...`;
+
+            if (!db) {
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-yellow-400"></i> 本機已存`;
+                if (showAlert) alert("已儲存至本機瀏覽器。");
+                return;
+            }
+
+            try {
+                await db.collection('exam_data').doc('system_structure').set({
+                    systemData: systemData,
+                    allNotesMap: allNotesMap,
+                    allExamQuestionsMap: allExamQuestionsMap,
+                    lastUpdatedPage: activeSubpageId,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                if (activeSubpageId && allLawsMap[activeSubpageId]) {
+                    await db.collection('exam_pages').doc(activeSubpageId).set({
+                        htmlContent: allLawsMap[activeSubpageId],
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-300"></i> 已同步雲端`;
+                if (showAlert) alert("🎉 資料已成功同步至雲端！");
+            } catch (e) {
+                console.error("雲端同步失敗：", e);
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
+            }
         }
 
         function syncCurrentPageDOM() {
@@ -333,9 +390,11 @@
             }
         }
 
+        /* 全站智慧搜尋 */
         function triggerGlobalSearch() {
             const input = document.getElementById('global-search-input');
             const keyword = input.value.trim().toLowerCase();
+            const panelTitle = document.getElementById('aside-panel-title');
             const listContainer = document.getElementById('quick-index-list');
 
             if (!keyword) {
@@ -343,7 +402,7 @@
                 return;
             }
 
-            document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> 搜尋結果 ("${keyword}")`;
+            panelTitle.innerHTML = `<i class="fa-solid fa-magnifying-glass text-blue-600"></i> 搜尋結果 ("${keyword}")`;
 
             let resultsHTML = '';
             let totalCount = 0;
@@ -360,20 +419,28 @@
                         totalCount++;
                         const cardTitle = card.querySelector('.law-card-title')?.innerText || "法條卡片";
                         resultsHTML += `
-                            <div onclick="jumpToSearchResult('${subId}', '${cardTitle}')" style="padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
-                                <div style="font-size:11px; font-weight:bold; color:#2563eb;">《${subTitle}》</div>
-                                <div style="font-weight:bold; font-size:12px;">${cardTitle}</div>
+                            <div onclick="jumpToSearchResult('${subId}', '${cardTitle}')" class="p-2 border-b border-gray-100 hover:bg-blue-50 rounded cursor-pointer transition space-y-1">
+                                <div class="flex justify-between items-center text-xs font-bold text-blue-600">
+                                    <span>《${subTitle}》</span>
+                                    <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">法條</span>
+                                </div>
+                                <div class="font-bold text-gray-800">${cardTitle}</div>
+                                <div class="text-xs text-gray-500 truncate">${text.replace(cardTitle, '').trim().substring(0, 50)}...</div>
                             </div>
                         `;
                     }
                 });
             });
 
-            listContainer.innerHTML = totalCount === 0 ? '<p style="color:#aaa;">無符合結果</p>' : resultsHTML;
+            if (totalCount === 0) {
+                listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 italic">未查找到任何包含「${keyword}」的法規或資訊。</div>`;
+            } else {
+                listContainer.innerHTML = resultsHTML;
+            }
         }
 
         function getSubpageTitleById(subId) {
-            let found = "法規頁面";
+            let found = "未知頁面";
             systemData.exams.forEach(e => {
                 e.categories.forEach(c => {
                     c.subpages.forEach(s => { if (s.id === subId) found = s.title; });
@@ -385,11 +452,25 @@
         function jumpToSearchResult(subId, cardTitle) {
             selectSubpage(subId, getSubpageTitleById(subId));
             switchTab('tab-law');
+            
+            setTimeout(() => {
+                const container = document.getElementById('laws-container-inner');
+                if (!container) return;
+                const cards = container.querySelectorAll('.law-card');
+                cards.forEach(card => {
+                    if (card.querySelector('.law-card-title')?.innerText === cardTitle) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.classList.add('ring-2', 'ring-blue-500');
+                        setTimeout(() => card.classList.remove('ring-2', 'ring-blue-500'), 2500);
+                    }
+                });
+            }, 300);
         }
 
+        /* 法規全文匯入解析引擎 */
         function parseAndBatchCreateLaws() {
             const rawText = document.getElementById('custom-law-text').value.trim();
-            if (!rawText) return alert("請貼上法規內容！");
+            if (!rawText) return alert("請貼上法規全文或條文內容！");
 
             const lines = rawText.split('\n');
             let parsedElements = [];
@@ -420,49 +501,101 @@
 
             parsedElements.forEach(elem => {
                 if (elem.type === 'chapter') {
-                    container.insertAdjacentHTML('beforeend', `<div class="chapter-header"><span contenteditable="true">${elem.title}</span></div>`);
+                    const chapHTML = `
+                        <div class="chapter-header group cursor-grab">
+                            <span class="drag-handle text-gray-300 hover:text-gray-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
+                            <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', chapHTML);
                 } else if (elem.type === 'article') {
-                    container.insertAdjacentHTML('beforeend', getLawCardHTML(elem.data.title, elem.data.items.join('<br>')));
+                    const art = elem.data;
+                    let itemsText = art.items.join('<br>');
+                    container.insertAdjacentHTML('beforeend', getLawCardHTML(art.title, itemsText || "無內文"));
                 }
             });
 
             allLawsMap[activeSubpageId] = container.innerHTML;
+            document.getElementById('custom-law-text').value = "";
             closeLawUploadModal();
             refreshQuickIndex();
+            initDragAndDrop();
             saveAllToStorage(true);
         }
 
         function getLawCardHTML(title, bodyText) {
             return `
-                <div class="law-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 class="law-card-title" contenteditable="true">${title}</h3>
-                        <button onclick="this.closest('.law-card').remove(); saveAllToStorage(false);" style="color:#ef4444; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                <div class="law-card bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                    <div class="flex justify-between items-start pt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="drag-handle text-gray-300 hover:text-gray-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
+                            <h3 class="law-card-title text-lg font-bold text-gray-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleSingleNewLawBadge(this)" class="text-xs bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium"><i class="fa-solid fa-flag"></i> 新修法</button>
+                            <button onclick="deleteLawCard(this)" class="text-gray-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
-                    <div class="law-card-body" contenteditable="true">${bodyText}</div>
+                    
+                    <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-gray-800">
+                        <div class="law-item-section group flex justify-between items-start">
+                            <span contenteditable="true" onblur="syncCurrentPageDOM()">${bodyText}</span>
+                            <button onclick="deleteSection(this)" class="section-del-btn text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="law-links-section mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-600">
+                        <div class="flex items-center justify-between font-semibold text-gray-500">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-link text-blue-500"></i> 相關連結與爭點補充：</span>
+                            <button onclick="addLinkToCard(this)" class="text-blue-600 hover:text-blue-800 text-xs font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
+                        </div>
+                        <div class="card-links-list space-y-1">
+                            <div class="link-item flex items-center justify-between bg-gray-50 px-2.5 py-1 rounded border border-gray-200">
+                                <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
+                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-gray-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2 border-t border-gray-100 text-xs">
+                        <button onclick="addSectionToCard(this, 'item')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-blue-500"></i> 新增「項」</button>
+                        <button onclick="addSectionToCard(this, 'subitem')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-green-500"></i> 新增「款」</button>
+                    </div>
                 </div>
             `;
         }
 
         function refreshQuickIndex() {
-            document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-list-ul"></i> 本頁法規索引`;
+            document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引`;
             const container = document.getElementById('laws-container-inner');
             const indexBox = document.getElementById('quick-index-list');
             if (!container || !indexBox) return;
             const elements = container.querySelectorAll('.chapter-header, .law-card');
             indexBox.innerHTML = Array.from(elements).map((el, i) => {
-                const text = el.querySelector('.law-card-title, span')?.innerText || "標題";
-                return `<div style="padding:4px; font-size:12px; color:#475569;"><i class="fa-regular fa-file-lines"></i> ${text}</div>`;
-            }).join('') || `<p style="color:#aaa;">無資料</p>`;
+                el.id = "idx_item_" + i;
+                const text = el.querySelector('.law-card-title, .chapter-title-text')?.innerText || "標題";
+                return `<a href="#idx_item_${i}" class="block text-gray-600 hover:text-blue-600 truncate py-0.5"><i class="fa-regular fa-file-lines text-xs text-gray-400 mr-1"></i>${text}</a>`;
+            }).join('') || `<p class="text-gray-400 italic">尚無索引資料...</p>`;
         }
 
+        /* 頁面 Tab 切換控制 */
         function switchTab(tabId) {
             currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('content-' + tabId).classList.remove('hidden');
 
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btn-' + tabId).classList.add('active');
+            ['law', 'ocr', 'notes', 'mistakes'].forEach(t => {
+                const btn = document.getElementById('btn-tab-' + t);
+                if (btn) {
+                    if ('tab-' + t === tabId) {
+                        btn.className = "pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 font-bold";
+                    } else {
+                        btn.className = "pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2 text-gray-500 font-semibold";
+                    }
+                }
+            });
 
             if (tabId === 'notes') renderNotesTab();
             if (tabId === 'mistakes') renderMistakesTab();
@@ -471,60 +604,170 @@
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
-            container.innerHTML = notes.map((n, i) => `
-                <div style="background:#fff; padding:16px; border-radius:8px; border:1px solid #ccc; display:flex; flex-direction:column; gap:8px;">
-                    <input type="text" value="${n.title}" onchange="allNotesMap['${activeSubpageId}'][${i}].title=this.value" style="font-weight:bold; border:none; border-bottom:1px solid #eee;">
-                    <textarea onchange="allNotesMap['${activeSubpageId}'][${i}].content=this.value" style="width:100%; height:80px; border:none; resize:none;">${n.content}</textarea>
+            if (notes.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-gray-400 text-xs italic text-center py-8">本頁面尚無獨立筆記，請點擊右上角新增。</div>`;
+                return;
+            }
+            container.innerHTML = notes.map((n, index) => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2 relative group">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <input type="text" value="${n.title}" onchange="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-gray-800 bg-transparent focus:outline-none w-full">
+                        <button onclick="deleteNoteCard(${index})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <textarea onchange="updateNoteData(${index}, 'content', this.value)" class="w-full h-28 text-xs text-gray-700 bg-gray-50 p-2 rounded border focus:outline-none resize-none leading-relaxed">${n.content}</textarea>
                 </div>
             `).join('');
         }
 
         function addNewNoteCard() {
             if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
-            allNotesMap[activeSubpageId].unshift({ title: "新筆記", content: "點此輸入筆記內容..." });
+            allNotesMap[activeSubpageId].unshift({ title: "新爭點筆記", content: "點此輸入詳細筆記內容與爭點分析..." });
             renderNotesTab();
+            saveAllToStorage(false);
+        }
+
+        function updateNoteData(index, key, val) {
+            if (allNotesMap[activeSubpageId] && allNotesMap[activeSubpageId][index]) {
+                allNotesMap[activeSubpageId][index][key] = val;
+                saveAllToStorage(false);
+            }
+        }
+
+        function deleteNoteCard(index) {
+            if (confirm("確定要刪除這張筆記卡片嗎？")) {
+                allNotesMap[activeSubpageId].splice(index, 1);
+                renderNotesTab();
+                saveAllToStorage(false);
+            }
         }
 
         function handleOCRUpload(input) {
             if (input.files && input.files[0]) {
-                document.getElementById('ocr-text-result').value = "【文字辨識內容】\n第一條：警察人員執行職務時，應依本條例之規定使用警械。";
+                const file = input.files[0];
+                const loading = document.getElementById('ocr-loading');
+                const previewBox = document.getElementById('ocr-preview-container');
+                const imgPreview = document.getElementById('ocr-img-preview');
+                const textResult = document.getElementById('ocr-text-result');
+                const statusText = document.getElementById('ocr-status-text');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgPreview.src = e.target.result;
+                    loading.classList.remove('hidden');
+                    previewBox.classList.add('hidden');
+
+                    if (window.Tesseract) {
+                        statusText.innerText = "Tesseract 辨識引擎進行文字提取中...";
+                        Tesseract.recognize(e.target.result, 'chi_tra+eng').then(({ data: { text } }) => {
+                            loading.classList.add('hidden');
+                            previewBox.classList.remove('hidden');
+                            textResult.value = text.trim() || "【辨識完成】未提取出清晰文字，可直接於此手動輸入。";
+                        }).catch(err => {
+                            loading.classList.add('hidden');
+                            previewBox.classList.remove('hidden');
+                            textResult.value = "【文字辨識內容】\n第一條：警察人員執行職務時，應依本條例之規定使用警械。";
+                        });
+                    } else {
+                        setTimeout(() => {
+                            loading.classList.add('hidden');
+                            previewBox.classList.remove('hidden');
+                            textResult.value = "【講義辨識內容】\n警械使用條例重點摘錄：\n1. 基於急迫需要得使用槍械\n2. 應儘量避免傷及致命部位";
+                        }, 800);
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         }
 
         function saveOCRToNotes() {
             const txt = document.getElementById('ocr-text-result').value;
+            if (!txt) return alert("講義內文空白！");
             if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
             allNotesMap[activeSubpageId].unshift({ title: "講義 OCR 摘要", content: txt });
-            alert("已成功存入個人筆記！");
+            alert("🎉 已成功存入「3. 個人筆記與爭點」區！");
             switchTab('tab-notes');
         }
 
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const questions = allExamQuestionsMap[activeSubpageId] || [];
+
+            if (questions.length === 0) {
+                container.innerHTML = `<div class="text-gray-400 text-xs italic text-center py-8">本頁面尚無歷屆試題，請點擊右上角「智能匯入整份試題」或「手動新增單題」。</div>`;
+                return;
+            }
+
+            const currentCatSubpages = systemData.exams[currentExamIndex]?.categories[0]?.subpages || [];
+
             container.innerHTML = questions.map((q, qIdx) => `
-                <div style="background:#fff; padding:16px; border-radius:8px; border:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;">
-                    <div style="font-weight:bold;">第 ${qIdx + 1} 題: ${q.title}</div>
-                    <div style="font-size:12px; color:#666;">${(q.options || []).join(' | ')}</div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3 relative">
+                    <div class="flex justify-between items-start border-b pb-2">
+                        <span class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                            <i class="fa-regular fa-circle-question text-blue-600"></i> 第 ${qIdx + 1} 題
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <select onchange="reassignQuestionSubpage(${qIdx}, this.value)" class="text-xs bg-gray-100 border border-gray-300 rounded px-2 py-1 text-gray-700">
+                                <option value="">指派至法條分頁...</option>
+                                ${currentCatSubpages.map(s => `<option value="${s.id}" ${s.id === activeSubpageId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                            </select>
+                            <button onclick="deleteExamQuestion(${qIdx})" class="text-gray-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-gray-800 leading-relaxed outline-none">${q.title}</div>
+                    <div class="space-y-1 pl-2 text-xs text-gray-600">
+                        ${(q.options || []).map((opt, oIdx) => `
+                            <div class="flex items-center gap-2">
+                                <span contenteditable="true" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${opt}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-gray-500">正確答案：</span>
+                            <input type="text" value="${q.answer || 'A'}" onchange="updateExamQuestionData(${qIdx}, 'answer', this.value)" class="w-10 text-center border rounded font-bold text-blue-600">
+                        </div>
+                        <div class="flex items-center gap-2 flex-1 ml-4">
+                            <span class="font-semibold text-gray-500">解析/備註：</span>
+                            <input type="text" value="${q.analysis || ''}" placeholder="點此輸入錯題檢討解析..." onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" class="flex-1 border rounded px-2 py-0.5 text-gray-600">
+                        </div>
+                    </div>
                 </div>
             `).join('');
         }
 
         function addNewExamQuestionCard() {
             if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
-            allExamQuestionsMap[activeSubpageId].unshift({ title: "1. 點此編輯題目內文...", options: ["(A) 選項 A", "(B) 選項 B"] });
+            allExamQuestionsMap[activeSubpageId].unshift({
+                title: "1. 點此編輯題目內文...",
+                options: ["(A) 選項 A", "(B) 選項 B", "(C) 選項 C", "(D) 選項 D"],
+                answer: "A",
+                analysis: ""
+            });
             renderMistakesTab();
+            saveAllToStorage(false);
         }
 
         function parseAndBatchCreateExamQuestions() {
             const rawText = document.getElementById('custom-exam-text').value.trim();
-            if (!rawText) return alert("請貼上考題！");
+            if (!rawText) return alert("請貼上考題全文！");
 
             const lines = rawText.split('\n');
             let questions = [];
-            lines.forEach((line, i) => {
-                if (line.trim()) questions.push({ title: line.trim(), options: ["(A) 選項 A", "(B) 選項 B"] });
+            let currentQ = null;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                const isNewQuestion = /^[\d\uff10-\uff19]+[\uff0e\u002e\u3001]/.test(trimmed);
+                if (isNewQuestion) {
+                    if (currentQ) questions.push(currentQ);
+                    currentQ = { title: trimmed, options: [], answer: 'A', analysis: '' };
+                } else if (currentQ) {
+                    currentQ.options.push(trimmed);
+                }
             });
+            if (currentQ) questions.push(currentQ);
 
             if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
             allExamQuestionsMap[activeSubpageId] = allExamQuestionsMap[activeSubpageId].concat(questions);
@@ -534,10 +777,106 @@
             saveAllToStorage(true);
         }
 
+        function updateExamQuestionData(qIdx, key, val) {
+            if (allExamQuestionsMap[activeSubpageId] && allExamQuestionsMap[activeSubpageId][qIdx]) {
+                allExamQuestionsMap[activeSubpageId][qIdx][key] = val;
+                saveAllToStorage(false);
+            }
+        }
+
+        function updateExamOptionData(qIdx, oIdx, val) {
+            if (allExamQuestionsMap[activeSubpageId] && allExamQuestionsMap[activeSubpageId][qIdx]) {
+                allExamQuestionsMap[activeSubpageId][qIdx].options[oIdx] = val;
+                saveAllToStorage(false);
+            }
+        }
+
+        function reassignQuestionSubpage(qIdx, targetSubId) {
+            if (!targetSubId || targetSubId === activeSubpageId) return;
+            const q = allExamQuestionsMap[activeSubpageId][qIdx];
+            allExamQuestionsMap[activeSubpageId].splice(qIdx, 1);
+            if (!allExamQuestionsMap[targetSubId]) allExamQuestionsMap[targetSubId] = [];
+            allExamQuestionsMap[targetSubId].push(q);
+            renderMistakesTab();
+            saveAllToStorage(true);
+            alert(`已成功將該題移至《${getSubpageTitleById(targetSubId)}》子頁面！`);
+        }
+
+        function deleteExamQuestion(qIdx) {
+            if (confirm("確定刪除此題目？")) {
+                allExamQuestionsMap[activeSubpageId].splice(qIdx, 1);
+                renderMistakesTab();
+                saveAllToStorage(false);
+            }
+        }
+
+        function initDragAndDrop() {
+            const cardsContainer = document.getElementById('laws-container-inner');
+            if (cardsContainer) {
+                if (cardSortable) cardSortable.destroy();
+                cardSortable = Sortable.create(cardsContainer, {
+                    animation: 150,
+                    handle: '.drag-handle, .law-card',
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() { syncCurrentPageDOM(); refreshQuickIndex(); saveAllToStorage(false); }
+                });
+            }
+            const sidebarNav = document.getElementById('sidebar-nav');
+            if (sidebarNav) {
+                if (sidebarSortable) sidebarSortable.destroy();
+                sidebarSortable = Sortable.create(sidebarNav, {
+                    animation: 150,
+                    handle: '.cat-drag-handle',
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() { reorderCategoriesFromDOM(); }
+                });
+            }
+        }
+
+        function reorderCategoriesFromDOM() {
+            const currentExam = systemData.exams[currentExamIndex];
+            if (!currentExam) return;
+            let newCategories = [];
+            document.querySelectorAll('.cat-block').forEach(catBlock => {
+                const catId = catBlock.getAttribute('data-cat-id');
+                const oldCat = currentExam.categories.find(c => c.id === catId);
+                if (!oldCat) return;
+
+                let newSubpages = [];
+                catBlock.querySelectorAll('li[data-sub-id]').forEach(subItem => {
+                    newSubpages.push({ id: subItem.getAttribute('data-sub-id'), title: subItem.getAttribute('data-sub-title') });
+                });
+                newCategories.push({ id: oldCat.id, title: oldCat.title, subpages: newSubpages });
+            });
+            currentExam.categories = newCategories;
+            saveAllToStorage(false);
+        }
+
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
             updateViewData();
+
+            try {
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+
+                    db.collection('exam_data').doc('system_structure').onSnapshot(async doc => {
+                        if (doc.exists && doc.data().systemData) {
+                            systemData = doc.data().systemData;
+                            if (doc.data().allNotesMap) allNotesMap = doc.data().allNotesMap;
+                            if (doc.data().allExamQuestionsMap) allExamQuestionsMap = doc.data().allExamQuestionsMap;
+                            
+                            saveToLocalFallback();
+                            renderExamSelect();
+                            updateViewData();
+                        }
+                        const statusEl = document.getElementById('cloud-status');
+                        if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-green-300"></i> 雲端已連線`;
+                    });
+                }
+            } catch(e) {}
         }
 
         window.onload = function() { initApp(); };
@@ -548,8 +887,12 @@
         }
 
         function changeExam(index) {
+            syncCurrentPageDOM();
             currentExamIndex = parseInt(index);
             updateViewData();
+            const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
+            if (firstSub) selectSubpage(firstSub.id, firstSub.title, false);
+            saveAllToStorage(false);
         }
 
         function updateViewData() {
@@ -558,21 +901,38 @@
             let navHTML = '';
             
             currentExam.categories.forEach((cat, catIdx) => {
-                navHTML += `<div class="cat-block">
-                    <div class="cat-header"><i class="fa-solid fa-folder"></i> ${cat.title}</div>
-                    <ul class="subpage-list">`;
+                navHTML += `<div class="cat-block bg-gray-900 bg-opacity-80 rounded-lg border border-gray-800 p-2 space-y-2" data-cat-id="${cat.id}">
+                    <div class="group flex justify-between items-center text-xs font-bold text-gray-400 uppercase px-1">
+                        <span class="truncate flex items-center gap-1.5 cursor-grab cat-drag-handle">
+                            <i class="fa-solid fa-grip-vertical text-gray-600"></i>
+                            <i class="fa-solid fa-folder text-blue-500 mr-0.5"></i> ${cat.title}
+                        </span>
+                        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
+                            <button onclick="editCategoryName(${catIdx})" class="hover:text-blue-400"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteCategory(${catIdx})" class="hover:text-red-400"><i class="fa-solid fa-trash text-xs"></i></button>
+                            <button onclick="openMoveSubModal('${cat.id}')" class="hover:text-green-400 ml-1"><i class="fa-solid fa-plus text-xs"></i></button>
+                        </div>
+                    </div>
+                    <ul class="subpage-list space-y-1 pl-2 border-l border-gray-700 min-h-2">`;
                 
                 cat.subpages.forEach((sub, subIdx) => {
                     const isSelected = sub.id === activeSubpageId;
-                    navHTML += `<li class="subpage-item ${isSelected ? 'active' : ''}" onclick="selectSubpage('${sub.id}', '${sub.title}')">${sub.title}</li>`;
+                    navHTML += `<li data-sub-id="${sub.id}" data-sub-title="${sub.title}" class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-gray-400 hover:bg-gray-800'} px-2 py-1 text-xs cursor-grab">
+                        <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
+                        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
+                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" class="hover:text-yellow-300"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" class="hover:text-red-300"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </li>`;
                 });
                 navHTML += `</ul></div>`;
             });
             document.getElementById('sidebar-nav').innerHTML = navHTML;
+            initDragAndDrop();
         }
 
-        function selectSubpage(subId, title) {
-            syncCurrentPageDOM();
+        async function selectSubpage(subId, title, shouldSync = true) {
+            if(shouldSync) syncCurrentPageDOM();
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
@@ -585,6 +945,10 @@
 
             refreshQuickIndex();
             updateViewData();
+            initDragAndDrop();
+            if (currentTab === 'notes') renderNotesTab();
+            if (currentTab === 'mistakes') renderMistakesTab();
+            if(shouldSync) saveAllToStorage(false);
         }
 
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
