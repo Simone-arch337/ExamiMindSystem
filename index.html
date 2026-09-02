@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>國家考試智慧備考系統 ExamiMind</title>
     
-    <!-- 1. 恢復原本最穩定的 Tailwind CSS 3.x CDN 來源 -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 使用靜態編譯版 Tailwind CSS 2.2.19 (絕不跑掉、絕不動態失敗) -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwindcss.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- 2. 拖曳排序與前端 OCR 庫 -->
+    <!-- 拖曳排序與前端 OCR 庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
+        /* 補充微調樣式 (確保 100% 還原原本質感) */
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
         .highlight-pink { background-color: #fbcfe8; padding: 2px 4px; border-radius: 4px; }
@@ -44,54 +45,52 @@
         .sortable-drag { cursor: grabbing; }
 
         html { scroll-behavior: smooth; }
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans">
+<body class="text-gray-800 font-sans">
 
     <div class="flex h-screen overflow-hidden">
         
         <!-- 1. 左側欄：全站搜尋與目標考試切換 -->
-        <aside class="w-80 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
+        <aside class="w-80 bg-gray-900 text-gray-300 flex flex-col border-r border-gray-800 flex-shrink-0">
             
-            <div class="p-4 border-b border-slate-800 space-y-3">
+            <div class="p-4 border-b border-gray-800 space-y-3">
                 <div class="flex justify-between items-center">
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">當前目標考試</label>
-                    <span id="cloud-status" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700 flex items-center gap-1">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">當前目標考試</label>
+                    <span id="cloud-status" class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700 flex items-center gap-1">
                         <i class="fa-solid fa-spinner fa-spin"></i> 初始化中
                     </span>
                 </div>
                 
-                <div class="flex gap-1.5">
-                    <select id="exam-select" onchange="changeExam(this.value)" class="flex-1 bg-slate-800 text-white font-bold text-xs rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate">
+                <div class="flex gap-1">
+                    <select id="exam-select" onchange="changeExam(this.value)" class="flex-1 bg-gray-800 text-white font-bold text-xs rounded-lg px-2.5 py-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate">
                     </select>
                     <button onclick="addExamType()" title="新增考試種類" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1.5 rounded-lg text-xs transition"><i class="fa-solid fa-plus"></i></button>
-                    <button onclick="editExamType()" title="修改考試名稱" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-pen"></i></button>
-                    <button onclick="deleteExamType()" title="刪除考試種類" class="bg-slate-800 hover:bg-red-900 text-red-400 px-2 py-1.5 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-trash"></i></button>
+                    <button onclick="editExamType()" title="修改考試名稱" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1.5 rounded-lg text-xs border border-gray-700 transition"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteExamType()" title="刪除考試種類" class="bg-gray-800 hover:bg-red-900 text-red-400 px-2 py-1.5 rounded-lg text-xs border border-gray-700 transition"><i class="fa-solid fa-trash"></i></button>
                 </div>
 
                 <!-- 全站智慧搜尋欄 -->
-                <div class="relative mt-2 flex gap-1.5">
+                <div class="relative mt-2 flex gap-1">
                     <div class="relative flex-1">
-                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                        </div>
-                        <input type="text" id="global-search-input" onkeypress="if(event.key === 'Enter') triggerGlobalSearch()" placeholder="輸入關鍵字..." class="w-full bg-slate-950 text-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 border border-slate-700 focus:outline-none focus:border-blue-500 transition">
+                        <input type="text" id="global-search-input" onkeypress="if(event.key === 'Enter') triggerGlobalSearch()" placeholder="全站關鍵字搜尋..." class="w-full bg-gray-950 text-gray-200 text-xs rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 transition">
                     </div>
                     <button onclick="triggerGlobalSearch()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-bold transition">查詢</button>
                 </div>
             </div>
 
-            <div class="p-3 border-b border-slate-800/60 bg-slate-950/40 flex flex-col gap-2">
+            <div class="p-3 border-b border-gray-800 bg-black bg-opacity-40 flex flex-col gap-2">
                 <div class="flex gap-2">
-                    <button onclick="openAddPageModal('main')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1.5 px-2 rounded border border-slate-700 flex items-center justify-center gap-1 transition">
+                    <button onclick="openAddPageModal('main')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs py-1.5 px-2 rounded border border-gray-700 flex items-center justify-center gap-1 transition">
                         <i class="fa-solid fa-folder-plus text-blue-400"></i> 新增主頁面
                     </button>
-                    <button onclick="openAddPageModal('sub')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1.5 px-2 rounded border border-slate-700 flex items-center justify-center gap-1 transition">
+                    <button onclick="openAddPageModal('sub')" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs py-1.5 px-2 rounded border border-gray-700 flex items-center justify-center gap-1 transition">
                         <i class="fa-solid fa-file-circle-plus text-green-400"></i> 新增子頁面
                     </button>
                 </div>
                 
-                <button onclick="saveAllToStorage(true)" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-amber-500">
+                <button onclick="saveAllToStorage(true)" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-1.5 shadow-md border border-yellow-500">
                     <i class="fa-solid fa-cloud-arrow-up"></i> 儲存並跨裝置同步至雲端
                 </button>
             </div>
@@ -101,22 +100,22 @@
         </aside>
 
         <!-- 2. 主內容區 -->
-        <main class="flex-1 flex flex-col bg-slate-50 overflow-y-auto" id="main-container">
+        <main class="flex-1 flex flex-col bg-gray-50 overflow-y-auto" id="main-container">
             
             <div id="student-view" class="flex-1 flex flex-col relative">
                 
-                <header class="bg-white border-b border-slate-200 px-6 pt-4 pb-0 shadow-sm sticky top-0 z-20">
+                <header class="bg-white border-b border-gray-200 px-6 pt-4 pb-0 shadow-sm sticky top-0 z-20">
                     <div class="flex justify-between items-center mb-4">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
                                 <span id="current-sublaw-title">請選擇或新增子頁面</span>
                             </h1>
                         </div>
                         <div class="flex gap-2" id="header-action-btns">
-                            <button onclick="addNewChapterHeader()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 transition flex items-center gap-1.5">
+                            <button onclick="addNewChapterHeader()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-heading text-blue-600"></i> 新增章節標題
                             </button>
-                            <button onclick="addNewBlankLawCard()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-1.5">
+                            <button onclick="addNewBlankLawCard()" class="bg-gray-800 hover:bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-plus text-green-400"></i> 新增條文卡片
                             </button>
                             <button onclick="openLawUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2">
@@ -125,17 +124,17 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-8 border-b border-slate-200 text-sm font-semibold text-slate-600">
+                    <div class="flex gap-8 border-b border-gray-200 text-sm font-semibold text-gray-600">
                         <button onclick="switchTab('tab-law')" id="btn-tab-law" class="pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
                             <i class="fa-solid fa-gavel"></i> <span>1. 法規與條文對照</span>
                         </button>
-                        <button onclick="switchTab('tab-ocr')" id="btn-tab-ocr" class="pb-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2">
+                        <button onclick="switchTab('tab-ocr')" id="btn-tab-ocr" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
                             <i class="fa-solid fa-file-arrow-up"></i> <span>2. 講義與 OCR 辨識</span>
                         </button>
-                        <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="pb-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2">
+                        <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
                             <i class="fa-solid fa-pen-to-square"></i> <span>3. 個人筆記與爭點</span>
                         </button>
-                        <button onclick="switchTab('tab-mistakes')" id="btn-tab-mistakes" class="pb-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2">
+                        <button onclick="switchTab('tab-mistakes')" id="btn-tab-mistakes" class="pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2">
                             <i class="fa-solid fa-circle-xmark text-red-500"></i> <span>4. 歷屆試題與錯題檢討</span>
                         </button>
                     </div>
@@ -144,46 +143,46 @@
                 <!-- 頁面 1：法規與條文對照 -->
                 <div id="content-tab-law" class="p-6 tab-content flex gap-6">
                     <div class="flex-1 space-y-4">
-                        <div class="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md flex items-center justify-between sticky top-[108px] z-10 flex-wrap gap-2">
+                        <div class="bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-md flex items-center justify-between sticky top-20 z-10 flex-wrap gap-2">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500 font-medium flex items-center gap-1"><i class="fa-solid fa-highlighter text-amber-500"></i> 劃記：</span>
+                                <span class="text-xs text-gray-500 font-medium flex items-center gap-1"><i class="fa-solid fa-highlighter text-yellow-500"></i> 劃記：</span>
                                 <button onclick="applyHighlight('yellow')" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('green')" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
                                 <button onclick="applyHighlight('pink')" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
-                                <div class="h-4 w-px bg-slate-200 mx-1"></div>
-                                <button onclick="removeHighlight()" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs"><i class="fa-solid fa-eraser"></i></button>
+                                <div class="h-4 w-px bg-gray-200 mx-1"></div>
+                                <button onclick="removeHighlight()" class="w-6 h-6 rounded bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 transition border flex items-center justify-center text-xs"><i class="fa-solid fa-eraser"></i></button>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button onclick="toggleBatchSelectMode()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded transition border font-medium"><i class="fa-regular fa-square-check"></i> 批量刪除管理</button>
+                                <button onclick="toggleBatchSelectMode()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition border font-medium"><i class="fa-regular fa-square-check"></i> 批量刪除管理</button>
                                 <div id="batch-actions" class="hidden items-center gap-2">
                                     <button onclick="selectAllCards(true)" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded border border-blue-200">全選</button>
-                                    <button onclick="selectAllCards(false)" class="text-xs bg-slate-50 text-slate-600 px-2.5 py-1 rounded border border-slate-200">取消全選</button>
+                                    <button onclick="selectAllCards(false)" class="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded border border-gray-200">取消全選</button>
                                     <button onclick="deleteSelectedCards()" class="text-xs bg-red-600 text-white px-3 py-1 rounded shadow-sm"><i class="fa-solid fa-trash-can"></i> 刪除選取</button>
                                 </div>
-                                <button onclick="saveAllToStorage(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded transition font-bold"><i class="fa-solid fa-cloud-arrow-up"></i> 雲端同步儲存</button>
+                                <button onclick="saveAllToStorage(true)" class="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded transition font-bold"><i class="fa-solid fa-cloud-arrow-up"></i> 雲端同步儲存</button>
                             </div>
                         </div>
-                        <div id="laws-container-inner" class="space-y-4 min-h-[300px]"></div>
+                        <div id="laws-container-inner" class="space-y-4 min-h-full"></div>
                     </div>
 
-                    <!-- 右側欄位：索引/搜尋結果列表 -->
-                    <aside class="w-72 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2 h-fit sticky top-[108px] text-xs shrink-0">
-                        <div class="border-b pb-2 flex items-center justify-between text-slate-900 font-bold">
+                    <!-- 右側欄位：雙模式 (索引 / 搜尋結果列表) -->
+                    <aside class="w-72 bg-white rounded-xl border border-gray-200 p-3.5 shadow-sm space-y-2 h-max sticky top-20 text-xs flex-shrink-0">
+                        <div class="border-b pb-2 flex items-center justify-between text-gray-900 font-bold">
                             <span id="aside-panel-title" class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引</span>
-                            <button onclick="refreshQuickIndex()" title="重整/返回索引" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
+                            <button onclick="refreshQuickIndex()" title="重整/返回索引" class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-rotate-right"></i></button>
                         </div>
-                        <div id="quick-index-list" class="space-y-1 max-h-[calc(100vh-200px)] overflow-y-auto pr-1"></div>
+                        <div id="quick-index-list" class="space-y-1 max-h-96 overflow-y-auto pr-1"></div>
                     </aside>
                 </div>
 
                 <!-- 頁面 2：講義與 OCR 辨識區 -->
                 <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
-                    <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+                        <h3 class="font-bold text-gray-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
                         
-                        <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
-                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
-                            <p class="text-xs text-slate-600 font-medium">點擊上傳或選擇講義圖片 (JPG, PNG, WebP)</p>
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-xs text-gray-600 font-medium">點擊上傳或選擇講義圖片 (JPG, PNG, WebP)</p>
                             <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="handleOCRUpload(this)">
                         </div>
 
@@ -195,11 +194,11 @@
                         <div id="ocr-preview-container" class="hidden space-y-4 pt-2 border-t">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <h4 class="text-xs font-bold text-slate-700 mb-2"><i class="fa-regular fa-image"></i> 圖片預覽：</h4>
-                                    <img id="ocr-img-preview" src="" class="max-h-64 object-contain rounded border border-slate-200 bg-slate-50">
+                                    <h4 class="text-xs font-bold text-gray-700 mb-2"><i class="fa-regular fa-image"></i> 圖片預覽：</h4>
+                                    <img id="ocr-img-preview" src="" class="max-h-64 object-contain rounded border border-gray-200 bg-gray-50">
                                 </div>
                                 <div class="flex flex-col">
-                                    <h4 class="text-xs font-bold text-slate-700 mb-2"><i class="fa-solid fa-font"></i> 辨識與編輯結果：</h4>
+                                    <h4 class="text-xs font-bold text-gray-700 mb-2"><i class="fa-solid fa-font"></i> 辨識與編輯結果：</h4>
                                     <textarea id="ocr-text-result" class="w-full flex-1 h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed font-mono" placeholder="辨識結果將顯示於此..."></textarea>
                                 </div>
                             </div>
@@ -212,21 +211,21 @@
 
                 <!-- 頁面 3：個人筆記與爭點區 -->
                 <div id="content-tab-notes" class="p-6 space-y-6 tab-content hidden">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> 本分頁專屬爭點與重點筆記</h3>
-                        <button onclick="addNewNoteCard()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium"><i class="fa-solid fa-plus text-green-400"></i> 新增獨立筆記卡片</button>
+                    <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-900 text-sm"><i class="fa-solid fa-pen-to-square text-yellow-500 mr-2"></i> 本分頁專屬爭點與重點筆記</h3>
+                        <button onclick="addNewNoteCard()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium"><i class="fa-solid fa-plus text-green-400"></i> 新增獨立筆記卡片</button>
                     </div>
                     <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
 
                 <!-- 頁面 4：歷屆試題與錯題檢討區 -->
                 <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
-                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> 歷屆試題與錯題檢討資料庫</h3>
+                            <h3 class="font-bold text-gray-900 text-base flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> 歷屆試題與錯題檢討資料庫</h3>
                             <div class="flex gap-2">
                                 <button onclick="openExamBatchModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-wand-magic-sparkles"></i> 智能匯入整份歷屆試題</button>
-                                <button onclick="addNewExamQuestionCard()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-plus text-green-400"></i> 手動新增單題</button>
+                                <button onclick="addNewExamQuestionCard()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-plus text-green-400"></i> 手動新增單題</button>
                             </div>
                         </div>
 
@@ -239,44 +238,44 @@
     </div>
 
     <!-- Modal：新增頁面 -->
-    <div id="page-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-slate-200 space-y-4">
-            <h3 class="text-base font-bold text-slate-900" id="modal-title">新增頁面</h3>
+    <div id="page-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-gray-200 space-y-4">
+            <h3 class="text-base font-bold text-gray-900" id="modal-title">新增頁面</h3>
             <div id="modal-field-main" class="hidden"><input type="text" id="input-main-title" placeholder="主頁面名稱 (如: 行政法)" class="w-full p-2 border rounded text-sm"></div>
             <div id="modal-field-sub" class="hidden space-y-3">
                 <input type="text" id="input-sub-title" placeholder="子頁面名稱 (如: 行程序法)" class="w-full p-2 border rounded text-sm">
-                <select id="select-parent-main" class="w-full p-2 border rounded text-sm bg-slate-50"></select>
+                <select id="select-parent-main" class="w-full p-2 border rounded text-sm bg-gray-50"></select>
             </div>
-            <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定新增</button></div>
+            <div class="flex justify-end gap-2"><button onclick="closePageModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button><button onclick="confirmPageModal()" class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded">確定新增</button></div>
         </div>
     </div>
 
     <!-- Modal：匯入法規 -->
-    <div id="law-upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl w-[580px] p-6 border border-slate-200 space-y-4">
+    <div id="law-upload-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-lg p-6 border border-gray-200 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條文)</h3>
-                <button onclick="closeLawUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 匯入整篇法規 (自動切割條文)</h3>
+                <button onclick="closeLawUploadModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <textarea id="custom-law-text" class="w-full h-52 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;第一章 總則&#10;第 1 條 警察人員執行職務時...&#10;一、為避免非常變故..."></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
-                <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
+                <button onclick="closeLawUploadModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button>
                 <button onclick="parseAndBatchCreateLaws()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動辨識生成卡片</button>
             </div>
         </div>
     </div>
 
     <!-- Modal：批量匯入歷屆試題 -->
-    <div id="exam-batch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl w-[640px] p-6 border border-slate-200 space-y-4">
+    <div id="exam-batch-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-xl p-6 border border-gray-200 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 智能匯入整份歷屆試題 (自動分題)</h3>
-                <button onclick="closeExamBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 智能匯入整份歷屆試題 (自動分題)</h3>
+                <button onclick="closeExamBatchModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-slate-500">直接貼上整份試題文字，系統自動分割題號、題目與選項卡片：</p>
+            <p class="text-xs text-gray-500">直接貼上整份試題文字，系統自動分割題號、題目與選項卡片：</p>
             <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要"></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
-                <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
+                <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-gray-600">取消</button>
                 <button onclick="parseAndBatchCreateExamQuestions()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動切割與生成試題</button>
             </div>
         </div>
@@ -352,7 +351,7 @@
             if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步中...`;
 
             if (!db) {
-                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 本機已存`;
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-yellow-400"></i> 本機已存`;
                 if (showAlert) alert("已儲存至本機瀏覽器。");
                 return;
             }
@@ -373,7 +372,7 @@
                     });
                 }
 
-                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
+                if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-300"></i> 已同步雲端`;
                 if (showAlert) alert("🎉 資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
@@ -417,13 +416,13 @@
                         totalCount++;
                         const cardTitle = card.querySelector('.law-card-title')?.innerText || "法條卡片";
                         resultsHTML += `
-                            <div onclick="jumpToSearchResult('${subId}', '${cardTitle}')" class="p-2 border-b border-slate-100 hover:bg-blue-50 rounded cursor-pointer transition space-y-1">
-                                <div class="flex justify-between items-center text-[11px] font-bold text-blue-600">
+                            <div onclick="jumpToSearchResult('${subId}', '${cardTitle}')" class="p-2 border-b border-gray-100 hover:bg-blue-50 rounded cursor-pointer transition space-y-1">
+                                <div class="flex justify-between items-center text-xs font-bold text-blue-600">
                                     <span>《${subTitle}》</span>
-                                    <span class="bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded">法條</span>
+                                    <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">法條</span>
                                 </div>
-                                <div class="font-bold text-slate-800">${cardTitle}</div>
-                                <div class="text-[11px] text-slate-500 line-clamp-2">${text.replace(cardTitle, '').trim().substring(0, 70)}...</div>
+                                <div class="font-bold text-gray-800">${cardTitle}</div>
+                                <div class="text-xs text-gray-500 truncate">${text.replace(cardTitle, '').trim().substring(0, 50)}...</div>
                             </div>
                         `;
                     }
@@ -431,7 +430,7 @@
             });
 
             if (totalCount === 0) {
-                listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">未查找到任何包含「${keyword}」的法規或資訊。</div>`;
+                listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 italic">未查找到任何包含「${keyword}」的法規或資訊。</div>`;
             } else {
                 listContainer.innerHTML = resultsHTML;
             }
@@ -465,7 +464,7 @@
             }, 300);
         }
 
-        /* 法規全文匯入解析 */
+        /* 法規全文匯入解析引擎 */
         function parseAndBatchCreateLaws() {
             const rawText = document.getElementById('custom-law-text').value.trim();
             if (!rawText) return alert("請貼上法規全文或條文內容！");
@@ -501,9 +500,9 @@
                 if (elem.type === 'chapter') {
                     const chapHTML = `
                         <div class="chapter-header group cursor-grab">
-                            <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="drag-handle text-gray-300 hover:text-gray-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
                             <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
-                            <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
+                            <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     `;
                     container.insertAdjacentHTML('beforeend', chapHTML);
@@ -524,42 +523,42 @@
 
         function getLawCardHTML(title, bodyText) {
             return `
-                <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                <div class="law-card bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
                     <div class="flex justify-between items-start pt-1">
                         <div class="flex items-center gap-2">
-                            <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="drag-handle text-gray-300 hover:text-gray-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
                             <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
+                            <h3 class="law-card-title text-lg font-bold text-gray-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="toggleSingleNewLawBadge(this)" class="text-xs bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium"><i class="fa-solid fa-flag"></i> 新修法</button>
-                            <button onclick="deleteLawCard(this)" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteLawCard(this)" class="text-gray-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
                     
-                    <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
+                    <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-gray-800">
                         <div class="law-item-section group flex justify-between items-start">
                             <span contenteditable="true" onblur="syncCurrentPageDOM()">${bodyText}</span>
-                            <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
+                            <button onclick="deleteSection(this)" class="section-del-btn text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
 
-                    <div class="law-links-section mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
-                        <div class="flex items-center justify-between font-semibold text-slate-500">
+                    <div class="law-links-section mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-600">
+                        <div class="flex items-center justify-between font-semibold text-gray-500">
                             <span class="flex items-center gap-1"><i class="fa-solid fa-link text-blue-500"></i> 相關連結與爭點補充：</span>
-                            <button onclick="addLinkToCard(this)" class="text-blue-600 hover:text-blue-800 text-[11px] font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
+                            <button onclick="addLinkToCard(this)" class="text-blue-600 hover:text-blue-800 text-xs font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
                         </div>
                         <div class="card-links-list space-y-1">
-                            <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
+                            <div class="link-item flex items-center justify-between bg-gray-50 px-2.5 py-1 rounded border border-gray-200">
                                 <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
-                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-gray-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
-                        <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-blue-500"></i> 新增「項」</button>
-                        <button onclick="addSectionToCard(this, 'subitem')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-green-500"></i> 新增「款」</button>
+                    <div class="flex gap-2 pt-2 border-t border-gray-100 text-xs">
+                        <button onclick="addSectionToCard(this, 'item')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-blue-500"></i> 新增「項」</button>
+                        <button onclick="addSectionToCard(this, 'subitem')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-green-500"></i> 新增「款」</button>
                     </div>
                 </div>
             `;
@@ -574,8 +573,8 @@
             indexBox.innerHTML = Array.from(elements).map((el, i) => {
                 el.id = "idx_item_" + i;
                 const text = el.querySelector('.law-card-title, .chapter-title-text')?.innerText || "標題";
-                return `<a href="#idx_item_${i}" class="block text-slate-600 hover:text-blue-600 truncate py-0.5"><i class="fa-regular fa-file-lines text-[10px] text-slate-400 mr-1"></i>${text}</a>`;
-            }).join('') || `<p class="text-slate-400 italic">尚無索引資料...</p>`;
+                return `<a href="#idx_item_${i}" class="block text-gray-600 hover:text-blue-600 truncate py-0.5"><i class="fa-regular fa-file-lines text-xs text-gray-400 mr-1"></i>${text}</a>`;
+            }).join('') || `<p class="text-gray-400 italic">尚無索引資料...</p>`;
         }
 
         /* 頁面 Tab 切換控制 */
@@ -590,7 +589,7 @@
                     if ('tab-' + t === tabId) {
                         btn.className = "pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 font-bold";
                     } else {
-                        btn.className = "pb-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2 text-slate-500 font-semibold";
+                        btn.className = "pb-3 border-b-2 border-transparent hover:text-gray-900 flex items-center gap-2 text-gray-500 font-semibold";
                     }
                 }
             });
@@ -599,21 +598,20 @@
             if (tabId === 'mistakes') renderMistakesTab();
         }
 
-        /* 頁面 3 - 筆記區 */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
             if (notes.length === 0) {
-                container.innerHTML = `<div class="col-span-2 text-slate-400 text-xs italic text-center py-8">本頁面尚無獨立筆記，請點擊右上角新增。</div>`;
+                container.innerHTML = `<div class="col-span-2 text-gray-400 text-xs italic text-center py-8">本頁面尚無獨立筆記，請點擊右上角新增。</div>`;
                 return;
             }
             container.innerHTML = notes.map((n, index) => `
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 relative group">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2 relative group">
                     <div class="flex justify-between items-center border-b pb-2">
-                        <input type="text" value="${n.title}" onchange="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-slate-800 bg-transparent focus:outline-none w-full">
-                        <button onclick="deleteNoteCard(${index})" class="text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <input type="text" value="${n.title}" onchange="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-gray-800 bg-transparent focus:outline-none w-full">
+                        <button onclick="deleteNoteCard(${index})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
-                    <textarea onchange="updateNoteData(${index}, 'content', this.value)" class="w-full h-28 text-xs text-slate-700 bg-slate-50 p-2 rounded border focus:outline-none resize-none leading-relaxed">${n.content}</textarea>
+                    <textarea onchange="updateNoteData(${index}, 'content', this.value)" class="w-full h-28 text-xs text-gray-700 bg-gray-50 p-2 rounded border focus:outline-none resize-none leading-relaxed">${n.content}</textarea>
                 </div>
             `).join('');
         }
@@ -640,7 +638,6 @@
             }
         }
 
-        /* 頁面 2 - OCR 圖片讀取與辨識 */
         function handleOCRUpload(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
@@ -688,48 +685,47 @@
             switchTab('tab-notes');
         }
 
-        /* 頁面 4 - 歷屆試題單題手動新增與歸類 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const questions = allExamQuestionsMap[activeSubpageId] || [];
 
             if (questions.length === 0) {
-                container.innerHTML = `<div class="text-slate-400 text-xs italic text-center py-8">本頁面尚無歷屆試題，請點擊右上角「智能匯入整份試題」或「手動新增單題」。</div>`;
+                container.innerHTML = `<div class="text-gray-400 text-xs italic text-center py-8">本頁面尚無歷屆試題，請點擊右上角「智能匯入整份試題」或「手動新增單題」。</div>`;
                 return;
             }
 
             const currentCatSubpages = systemData.exams[currentExamIndex]?.categories[0]?.subpages || [];
 
             container.innerHTML = questions.map((q, qIdx) => `
-                <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 relative">
+                <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3 relative">
                     <div class="flex justify-between items-start border-b pb-2">
-                        <span class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <span class="font-bold text-gray-800 text-sm flex items-center gap-2">
                             <i class="fa-regular fa-circle-question text-blue-600"></i> 第 ${qIdx + 1} 題
                         </span>
                         <div class="flex items-center gap-2">
-                            <select onchange="reassignQuestionSubpage(${qIdx}, this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 text-slate-700">
+                            <select onchange="reassignQuestionSubpage(${qIdx}, this.value)" class="text-xs bg-gray-100 border border-gray-300 rounded px-2 py-1 text-gray-700">
                                 <option value="">指派至法條分頁...</option>
                                 ${currentCatSubpages.map(s => `<option value="${s.id}" ${s.id === activeSubpageId ? 'selected' : ''}>${s.title}</option>`).join('')}
                             </select>
-                            <button onclick="deleteExamQuestion(${qIdx})" class="text-slate-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteExamQuestion(${qIdx})" class="text-gray-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
-                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none">${q.title}</div>
-                    <div class="space-y-1 pl-2 text-xs text-slate-600">
+                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-gray-800 leading-relaxed outline-none">${q.title}</div>
+                    <div class="space-y-1 pl-2 text-xs text-gray-600">
                         ${(q.options || []).map((opt, oIdx) => `
                             <div class="flex items-center gap-2">
                                 <span contenteditable="true" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${opt}</span>
                             </div>
                         `).join('')}
                     </div>
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-slate-500">正確答案：</span>
+                            <span class="font-semibold text-gray-500">正確答案：</span>
                             <input type="text" value="${q.answer || 'A'}" onchange="updateExamQuestionData(${qIdx}, 'answer', this.value)" class="w-10 text-center border rounded font-bold text-blue-600">
                         </div>
                         <div class="flex items-center gap-2 flex-1 ml-4">
-                            <span class="font-semibold text-slate-500">解析/備註：</span>
-                            <input type="text" value="${q.analysis || ''}" placeholder="點此輸入錯題檢討解析..." onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" class="flex-1 border rounded px-2 py-0.5 text-slate-600">
+                            <span class="font-semibold text-gray-500">解析/備註：</span>
+                            <input type="text" value="${q.analysis || ''}" placeholder="點此輸入錯題檢討解析..." onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" class="flex-1 border rounded px-2 py-0.5 text-gray-600">
                         </div>
                     </div>
                 </div>
@@ -874,7 +870,7 @@
                             updateViewData();
                         }
                         const statusEl = document.getElementById('cloud-status');
-                        if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-emerald-300"></i> 雲端已連線`;
+                        if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-green-300"></i> 雲端已連線`;
                     });
                 }
             } catch(e) {}
@@ -902,27 +898,27 @@
             let navHTML = '';
             
             currentExam.categories.forEach((cat, catIdx) => {
-                navHTML += `<div class="cat-block bg-slate-900/80 rounded-lg border border-slate-800 p-2 space-y-2" data-cat-id="${cat.id}">
-                    <div class="group flex justify-between items-center text-xs font-bold text-slate-400 uppercase px-1">
+                navHTML += `<div class="cat-block bg-gray-900 bg-opacity-80 rounded-lg border border-gray-800 p-2 space-y-2" data-cat-id="${cat.id}">
+                    <div class="group flex justify-between items-center text-xs font-bold text-gray-400 uppercase px-1">
                         <span class="truncate flex items-center gap-1.5 cursor-grab cat-drag-handle">
-                            <i class="fa-solid fa-grip-vertical text-slate-600"></i>
+                            <i class="fa-solid fa-grip-vertical text-gray-600"></i>
                             <i class="fa-solid fa-folder text-blue-500 mr-0.5"></i> ${cat.title}
                         </span>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
-                            <button onclick="editCategoryName(${catIdx})" class="hover:text-blue-400"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                            <button onclick="deleteCategory(${catIdx})" class="hover:text-red-400"><i class="fa-solid fa-trash text-[10px]"></i></button>
-                            <button onclick="openMoveSubModal('${cat.id}')" class="hover:text-green-400 ml-1"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                            <button onclick="editCategoryName(${catIdx})" class="hover:text-blue-400"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteCategory(${catIdx})" class="hover:text-red-400"><i class="fa-solid fa-trash text-xs"></i></button>
+                            <button onclick="openMoveSubModal('${cat.id}')" class="hover:text-green-400 ml-1"><i class="fa-solid fa-plus text-xs"></i></button>
                         </div>
                     </div>
-                    <ul class="subpage-list space-y-1 pl-2 border-l border-slate-700 min-h-[10px]">`;
+                    <ul class="subpage-list space-y-1 pl-2 border-l border-gray-700 min-h-2">`;
                 
                 cat.subpages.forEach((sub, subIdx) => {
                     const isSelected = sub.id === activeSubpageId;
-                    navHTML += `<li data-sub-id="${sub.id}" data-sub-title="${sub.title}" class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-slate-400 hover:bg-slate-800'} px-2 py-1 text-xs cursor-grab">
+                    navHTML += `<li data-sub-id="${sub.id}" data-sub-title="${sub.title}" class="group flex items-center justify-between rounded ${isSelected ? 'bg-blue-600 text-white font-medium' : 'text-gray-400 hover:bg-gray-800'} px-2 py-1 text-xs cursor-grab">
                         <a href="#" onclick="selectSubpage('${sub.id}', '${sub.title}')" class="flex-1 truncate">${sub.title}</a>
                         <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition">
-                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" class="hover:text-amber-300"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" class="hover:text-red-300"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="editSubpageName(${catIdx}, ${subIdx})" class="hover:text-yellow-300"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteSubpage(${catIdx}, ${subIdx})" class="hover:text-red-300"><i class="fa-solid fa-trash text-xs"></i></button>
                         </div>
                     </li>`;
                 });
