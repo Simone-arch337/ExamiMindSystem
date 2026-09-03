@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (子頁獨立隔離與刪除功能完全版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (修復版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -1004,15 +1004,17 @@
             }
         }
 
-        /* 智慧正方形亂碼替換與選項正規化函數 */
+        /* 智慧正方形亂碼替換與選項正規化函數 (全流程修復) */
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
                 .replace(/（\s*([Ａ-Ｄａ-ｄA-Da-d\?])\s*）/g, '($1)')
                 .replace(/Ａ/g, 'A').replace(/Ｂ/g, 'B').replace(/Ｃ/g, 'C').replace(/Ｄ/g, 'D')
                 .replace(/ａ/g, 'a').replace(/ｂ/g, 'b').replace(/ｃ/g, 'c').replace(/ｄ/g, 'd')
+                // 自動將黏在一起的選項或符號進行換行
                 .replace(/([^\n])\s*(\([A-Da-d]\))/g, '$1\n$2')
-                .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2');
+                .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2')
+                .replace(/([^\n])\s*([\uFFFD\?\u25A0\u25A1\u25A2\u25A3])/g, '$1\n$2');
 
             let lines = text.split('\n');
             let optionIndexMap = ['(A)', '(B)', '(C)', '(D)'];
@@ -1035,7 +1037,7 @@
             return lines.join('\n');
         }
 
-        /* 自動識別並切割題號與選項 */
+        /* 自動識別並切割題號與選項 (全流程修復) */
         function parseAndImportQuestionsText(rawText) {
             if (!rawText.trim()) return alert("未檢測到試題文字內容！");
 
@@ -1337,14 +1339,13 @@
             initDragAndDrop();
         }
 
-        /* 🌟 切換子頁面（進行完全隔離初始化） */
+        /* 切換子頁面（進行完全隔離初始化） */
         async function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncAllTabsDOM();
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
 
-            // 初始化新頁面的獨立資料儲存庫
             if (!allNotesMap[subId]) allNotesMap[subId] = [];
             if (!allExamQuestionsMap[subId]) allExamQuestionsMap[subId] = [];
             if (!allOcrResultsMap[subId]) allOcrResultsMap[subId] = "";
@@ -1376,7 +1377,6 @@
             updateViewData();
             initDragAndDrop();
 
-            // 重新渲染當前顯示的分頁 (確保 1~4 頁全是新子頁面的專屬內容)
             renderOcrTab();
             renderNotesTab();
             renderMistakesTab();
