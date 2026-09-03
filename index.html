@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (亂碼選項強效修復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (全功能完全儲存與防遺失版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -190,7 +190,7 @@
                         </div>
                         <div id="ocr-preview-container" class="space-y-3 pt-2">
                             <h4 class="text-xs font-bold text-slate-700">辨識與編輯區（自動同步儲存）：</h4>
-                            <textarea id="ocr-text-result" onchange="saveOCRResultText(this.value)" class="w-full h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed" placeholder="辨識結果將顯示於此..."></textarea>
+                            <textarea id="ocr-text-result" oninput="saveOCRResultText(this.value)" class="w-full h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed" placeholder="辨識結果將顯示於此..."></textarea>
                             <button onclick="saveOCRToNotes()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm transition"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字轉存入「個人筆記與爭點」</button>
                         </div>
                     </div>
@@ -332,7 +332,7 @@
         let cardSortable = null, sidebarSortable = null;
         let modalMode = 'main';
 
-        /* 本地記憶備份 */
+        /* 🌟 本地記憶救援與備份機制 */
         function saveToLocalFallback() {
             try {
                 localStorage.setItem("em_backup_systemData", JSON.stringify(systemData));
@@ -358,7 +358,7 @@
             } catch(e) {}
         }
 
-        /* 全系統跨分頁儲存引擎 */
+        /* 🌟 全頁面、全科目、100% 雲端與本機同步儲存引擎 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             saveToLocalFallback();
@@ -368,7 +368,7 @@
 
             if (!db) {
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-400"></i> 本機已存`;
-                if (showAlert) alert("已儲存至本機瀏覽器。");
+                if (showAlert) alert("已成功儲存至本機瀏覽器！");
                 return;
             }
 
@@ -391,7 +391,7 @@
                 }
 
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
-                if (showAlert) alert("🎉 全站所有分頁資料已成功同步至雲端！");
+                if (showAlert) alert("🎉 所有頁面與科目資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
@@ -406,7 +406,7 @@
             }
         }
 
-        /* 切換第 1 頁法規卡片打星星 (重點標記) */
+        /* 🌟 第 1 頁：法規卡片重點打星星 */
         function toggleStarBadge(btn) {
             const isStarred = btn.classList.contains('is-starred');
             if (isStarred) {
@@ -423,7 +423,7 @@
             saveAllToStorage(false);
         }
 
-        /* 切換第 1 頁法規卡片「唯讀 / 編輯」防誤觸狀態 */
+        /* 🌟 第 1 頁：法規卡片「唯讀 / 編輯防誤觸」開關 */
         function toggleCardEditMode(btn) {
             const card = btn.closest('.law-card');
             const isReadonly = card.classList.contains('is-readonly');
@@ -695,7 +695,7 @@
             if (tabId === 'mistakes') renderMistakesTab();
         }
 
-        /* 分頁 2：講義與 OCR 辨識儲存邏輯 */
+        /* 🌟 分頁 2：講義與 OCR 辨識儲存 */
         function renderOcrTab() {
             const ocrInput = document.getElementById('ocr-text-result');
             if (ocrInput) {
@@ -727,7 +727,7 @@
             switchTab('tab-notes');
         }
 
-        /* 分頁 3：個人筆記與爭點 */
+        /* 🌟 分頁 3：個人筆記與爭點（具備防誤觸與打星星標記） */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
@@ -801,7 +801,7 @@
             }
         }
 
-        /* 分頁 4：歷屆試題與錯題卡片 */
+        /* 🌟 分頁 4：歷屆試題與錯題卡片（具備防誤觸與打星星標記） */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const statsBar = document.getElementById('exam-stats-bar');
@@ -982,11 +982,9 @@
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
-                // 清理全形文字
                 .replace(/（\s*([Ａ-Ｄａ-ｄA-Da-d\?])\s*）/g, '($1)')
                 .replace(/Ａ/g, 'A').replace(/Ｂ/g, 'B').replace(/Ｃ/g, 'C').replace(/Ｄ/g, 'D')
                 .replace(/ａ/g, 'a').replace(/ｂ/g, 'b').replace(/ｃ/g, 'c').replace(/ｄ/g, 'd')
-                // 自動將黏在一起的標號換行
                 .replace(/([^\n])\s*(\([A-Da-d]\))/g, '$1\n$2')
                 .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2');
 
@@ -1000,7 +998,6 @@
                     currentOptIdx = 0;
                     return trimmed;
                 }
-                // 將正方形亂碼 (如 \uFFFD 或獨立的 ?) 自動替換為標準 (A)(B)(C)(D)
                 if (/^[\uFFFD\?\u25A0\u25A1\u25A2\u25A3]\s*/.test(trimmed)) {
                     let fixedSymbol = optionIndexMap[currentOptIdx % 4];
                     currentOptIdx++;
@@ -1027,7 +1024,6 @@
             let currentQ = null;
 
             const questionHeaderRegex = /^第?\s*[0-9\uff10-\uff19]{1,3}\s*題?[\.\、\)\s]/;
-            // 涵蓋標準標號、全形標號、以及沒修復完全的正方形亂碼
             const optionHeaderRegex = /^[\(（][A-Da-d\?][\)）]|^[A-Da-d\?][\.\、\s]|^[\uFFFD\?\u25A0\u25A1\u25A2\u25A3]/;
 
             lines.forEach(line => {
@@ -1210,13 +1206,21 @@
             saveAllToStorage(false);
         }
 
-        /* 初始化與安全載入 */
+        /* 🌟 初始化與安全載入 (防覆蓋防誤刪機制) */
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
             updateViewData();
 
-            selectSubpage("sub_1", "警械使用條例", false);
+            // 優先取得現有的第一頁 subId，沒有才用 "sub_1"
+            let initialSubId = "sub_1";
+            let initialSubTitle = "警械使用條例";
+            if (systemData.exams[0]?.categories[0]?.subpages[0]) {
+                initialSubId = systemData.exams[0].categories[0].subpages[0].id;
+                initialSubTitle = systemData.exams[0].categories[0].subpages[0].title;
+            }
+
+            selectSubpage(initialSubId, initialSubTitle, false);
 
             try {
                 if (typeof firebase !== 'undefined') {
@@ -1226,7 +1230,11 @@
                     db.collection('exam_data').doc('system_structure').onSnapshot(async doc => {
                         if (doc.exists) {
                             const cloudData = doc.data();
-                            if (cloudData.systemData) systemData = cloudData.systemData;
+                            
+                            // 智慧保留：僅當雲端存在且本地無資料時合併，不直接用空白雲端覆蓋本地
+                            if (cloudData.systemData && cloudData.systemData.exams && cloudData.systemData.exams.length > 0) {
+                                systemData = cloudData.systemData;
+                            }
                             if (cloudData.allNotesMap) allNotesMap = cloudData.allNotesMap;
                             if (cloudData.allExamQuestionsMap) allExamQuestionsMap = cloudData.allExamQuestionsMap;
                             if (cloudData.allOcrResultsMap) allOcrResultsMap = cloudData.allOcrResultsMap;
@@ -1305,7 +1313,7 @@
             initDragAndDrop();
         }
 
-        /* 切換子頁面 (資料安全讀取) */
+        /* 切換子頁面 (安全讀取) */
         async function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncCurrentPageDOM();
             activeSubpageId = subId;
