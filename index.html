@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全頁面 100% 強制持久儲存版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (子頁獨立隔離與刪除功能完全版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -182,14 +182,19 @@
                 <!-- 頁面 2：講義與 OCR 辨識區 -->
                 <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
+                            <button onclick="clearOcrResultText()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200 font-bold transition flex items-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> 清除/刪除本頁辨識內容
+                            </button>
+                        </div>
                         <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
                             <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
                             <p class="text-xs text-slate-600 font-medium">點擊上傳或拖曳講義照片/PDF 文件至此處</p>
                             <input type="file" id="ocr-file-input" class="hidden" onchange="handleOCRUpload(this)">
                         </div>
                         <div id="ocr-preview-container" class="space-y-3 pt-2">
-                            <h4 class="text-xs font-bold text-slate-700">辨識與編輯區（自動同步儲存）：</h4>
+                            <h4 class="text-xs font-bold text-slate-700">本子頁面專屬辨識與編輯區（自動同步儲存）：</h4>
                             <textarea id="ocr-text-result" oninput="saveOCRResultText(this.value)" class="w-full h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed" placeholder="辨識結果將顯示於此..."></textarea>
                             <button onclick="saveOCRToNotes()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm transition"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字轉存入「個人筆記與爭點」</button>
                         </div>
@@ -332,7 +337,7 @@
         let cardSortable = null, sidebarSortable = null;
         let modalMode = 'main';
 
-        /* 🌟 本地記憶救援與備份機制 */
+        /* 本地記憶救援與備份機制 */
         function saveToLocalFallback() {
             try {
                 localStorage.setItem("em_backup_systemData", JSON.stringify(systemData));
@@ -358,17 +363,15 @@
             } catch(e) {}
         }
 
-        /* 🌟 核心突破：1~4 分頁 DOM 現狀全面寫入記憶體 */
+        /* 1~4 分頁 DOM 現狀全面獨立寫入記憶體 */
         function syncAllTabsDOM() {
             if (!activeSubpageId) return;
 
-            // 1. 同步第 1 頁（法規卡片）
             const container = document.getElementById('laws-container-inner');
             if (container && container.innerHTML.trim() !== "") {
                 allLawsMap[activeSubpageId] = container.innerHTML;
             }
 
-            // 2. 同步第 2 頁（OCR 辨識文字）
             const ocrElem = document.getElementById('ocr-text-result');
             if (ocrElem) {
                 allOcrResultsMap[activeSubpageId] = ocrElem.value;
@@ -377,7 +380,7 @@
             saveToLocalFallback();
         }
 
-        /* 🌟 全頁面、全科目、100% 雲端與本機同步儲存引擎 */
+        /* 全頁面、全科目、100% 雲端與本機同步儲存引擎 */
         async function saveAllToStorage(showAlert = false) {
             syncAllTabsDOM();
 
@@ -420,7 +423,7 @@
             syncAllTabsDOM();
         }
 
-        /* 🌟 第 1 頁：法規卡片重點打星星 */
+        /* 第 1 頁：法規卡片重點打星星 */
         function toggleStarBadge(btn) {
             const isStarred = btn.classList.contains('is-starred');
             if (isStarred) {
@@ -437,7 +440,7 @@
             saveAllToStorage(false);
         }
 
-        /* 🌟 第 1 頁：法規卡片「唯讀 / 編輯防誤觸」開關 */
+        /* 第 1 頁：法規卡片「唯讀 / 編輯防誤觸」開關 */
         function toggleCardEditMode(btn) {
             const card = btn.closest('.law-card');
             const isReadonly = card.classList.contains('is-readonly');
@@ -710,7 +713,7 @@
             if (tabId === 'mistakes') renderMistakesTab();
         }
 
-        /* 🌟 分頁 2：講義與 OCR 辨識儲存 */
+        /* 分頁 2：講義與 OCR 辨識（獨立儲存與清除刪除按鈕） */
         function renderOcrTab() {
             const ocrInput = document.getElementById('ocr-text-result');
             if (ocrInput) {
@@ -721,6 +724,14 @@
         function saveOCRResultText(val) {
             allOcrResultsMap[activeSubpageId] = val;
             saveAllToStorage(false);
+        }
+
+        function clearOcrResultText() {
+            if (confirm("確定要清除/刪除本子頁面的講義辨識內容？")) {
+                allOcrResultsMap[activeSubpageId] = "";
+                document.getElementById('ocr-text-result').value = "";
+                saveAllToStorage(false);
+            }
         }
 
         function handleOCRUpload(input) {
@@ -738,11 +749,11 @@
             if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
             allNotesMap[activeSubpageId].unshift({ title: "講義 OCR 摘要筆記", content: txt, isStarred: false, isReadonly: true });
             saveAllToStorage(true);
-            alert("已成功轉存入個人筆記！");
+            alert("已成功轉存入本頁面的個人筆記！");
             switchTab('tab-notes');
         }
 
-        /* 🌟 分頁 3：個人筆記與爭點（強效輸入即時同步） */
+        /* 分頁 3：個人筆記與爭點（獨立卡片刪除功能） */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
@@ -755,7 +766,7 @@
                 const isStarred = !!n.isStarred;
 
                 return `
-                <div class="note-card ${isReadonly ? 'is-readonly' : ''} bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 relative transition">
+                <div class="note-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 relative transition">
                     <div class="flex justify-between items-center border-b pb-2 flex-wrap gap-2">
                         <input type="text" value="${n.title}" ${isReadonly ? 'disabled' : ''} oninput="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-slate-800 bg-transparent focus:outline-none flex-1">
                         
@@ -768,7 +779,7 @@
                                 <i class="fa-solid ${isReadonly ? 'fa-pen text-blue-600' : 'fa-check text-emerald-600'}"></i> ${isReadonly ? '編輯' : '儲存'}
                             </button>
 
-                            <button onclick="deleteNoteCard(${index})" class="note-del-btn text-slate-400 hover:text-red-500 text-xs p-1" title="刪除筆記"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteNoteCard(${index})" class="text-slate-400 hover:text-red-500 text-xs p-1" title="刪除此卡片"><i class="fa-solid fa-trash-can"></i> 刪除卡片</button>
                         </div>
                     </div>
                     <textarea ${isReadonly ? 'disabled' : ''} oninput="updateNoteData(${index}, 'content', this.value)" class="w-full h-32 text-xs text-slate-700 ${isReadonly ? 'bg-slate-50/50 border-transparent' : 'bg-white border-slate-200'} p-2 rounded-lg border focus:outline-none resize-none leading-relaxed transition">${n.content}</textarea>
@@ -816,7 +827,7 @@
             }
         }
 
-        /* 🌟 分頁 4：歷屆試題與錯題卡片（強效輸入即時同步） */
+        /* 分頁 4：歷屆試題與錯題卡片（獨立刪除單題功能） */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const statsBar = document.getElementById('exam-stats-bar');
@@ -844,7 +855,7 @@
                 const isCorrect = userChoice === correctAnswer;
 
                 return `
-                <div class="exam-card ${isReadonly ? 'is-readonly' : ''} bg-white rounded-xl border ${isSubmitted ? (isCorrect ? 'border-emerald-300 bg-emerald-50/10' : 'border-red-300 bg-red-50/10') : 'border-slate-200'} p-5 shadow-sm space-y-4 relative transition">
+                <div class="exam-card bg-white rounded-xl border ${isSubmitted ? (isCorrect ? 'border-emerald-300 bg-emerald-50/10' : 'border-red-300 bg-red-50/10') : 'border-slate-200'} p-5 shadow-sm space-y-4 relative transition">
                     
                     <div class="flex justify-between items-start border-b pb-2 flex-wrap gap-2">
                         <div class="flex items-center gap-2">
@@ -868,7 +879,7 @@
                                 <option value="">指派至法條分頁...</option>
                                 ${currentCatSubpages.map(s => `<option value="${s.id}" ${s.id === activeSubpageId ? 'selected' : ''}>${s.title}</option>`).join('')}
                             </select>
-                            <button onclick="deleteExamQuestion(${qIdx})" class="exam-del-btn text-slate-400 hover:text-red-500 text-xs p-1" title="刪除此題"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteExamQuestion(${qIdx})" class="text-slate-400 hover:text-red-500 text-xs p-1" title="刪除此題"><i class="fa-solid fa-trash-can"></i> 刪除此題</button>
                         </div>
                     </div>
 
@@ -950,7 +961,7 @@
             }
         }
 
-        /* 🌟 考選部 PDF 試題抽取與正方形亂碼轉碼修復引擎 */
+        /* 考選部 PDF 試題抽取與正方形亂碼轉碼修復引擎 */
         async function handlePDFExamUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -993,7 +1004,7 @@
             }
         }
 
-        /* 🌟 智慧正方形亂碼替換與選項正規化函數 */
+        /* 智慧正方形亂碼替換與選項正規化函數 */
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
@@ -1024,7 +1035,7 @@
             return lines.join('\n');
         }
 
-        /* 🌟 自動識別並切割題號與選項 */
+        /* 自動識別並切割題號與選項 */
         function parseAndImportQuestionsText(rawText) {
             if (!rawText.trim()) return alert("未檢測到試題文字內容！");
 
@@ -1221,7 +1232,7 @@
             saveAllToStorage(false);
         }
 
-        /* 🌟 初始化與安全載入 */
+        /* 初始化與安全載入 */
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
@@ -1326,12 +1337,17 @@
             initDragAndDrop();
         }
 
-        /* 🌟 切換子頁面（切換前先同步 1~4 所有頁面） */
+        /* 🌟 切換子頁面（進行完全隔離初始化） */
         async function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncAllTabsDOM();
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
+
+            // 初始化新頁面的獨立資料儲存庫
+            if (!allNotesMap[subId]) allNotesMap[subId] = [];
+            if (!allExamQuestionsMap[subId]) allExamQuestionsMap[subId] = [];
+            if (!allOcrResultsMap[subId]) allOcrResultsMap[subId] = "";
             
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
@@ -1359,9 +1375,12 @@
             refreshQuickIndex();
             updateViewData();
             initDragAndDrop();
-            if (currentTab === 'ocr') renderOcrTab();
-            if (currentTab === 'notes') renderNotesTab();
-            if (currentTab === 'mistakes') renderMistakesTab();
+
+            // 重新渲染當前顯示的分頁 (確保 1~4 頁全是新子頁面的專屬內容)
+            renderOcrTab();
+            renderNotesTab();
+            renderMistakesTab();
+
             if(shouldSync) saveAllToStorage(false);
         }
 
