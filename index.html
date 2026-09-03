@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全功能完全修復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (防誤觸唯讀鎖定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -19,8 +19,11 @@
         .law-item-section { margin-top: 8px; padding-left: 8px; border-left: 2px solid #cbd5e1; position: relative; }
         .law-subitem-section { margin-top: 4px; padding-left: 20px; color: #334155; position: relative; }
         
-        .section-del-btn { opacity: 0; transition: opacity 0.2s; }
-        .law-item-section:hover .section-del-btn, .law-subitem-section:hover .section-del-btn { opacity: 1; }
+        /* 唯讀模式下隱藏刪除按鈕與編輯輔助工具 */
+        .is-readonly .section-del-btn,
+        .is-readonly .card-edit-controls,
+        .is-readonly .drag-handle,
+        .is-readonly .card-select-checkbox { display: none !important; }
 
         .chapter-header {
             display: flex;
@@ -145,11 +148,11 @@
                         <div class="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md flex items-center justify-between sticky top-[108px] z-10 flex-wrap gap-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-slate-500 font-medium flex items-center gap-1"><i class="fa-solid fa-highlighter text-amber-500"></i> 劃記：</span>
-                                <button onclick="applyHighlight('yellow')" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm"></button>
-                                <button onclick="applyHighlight('green')" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm"></button>
-                                <button onclick="applyHighlight('pink')" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm"></button>
+                                <button onclick="applyHighlight('yellow')" class="w-6 h-6 rounded bg-yellow-300 hover:scale-110 transition border border-yellow-400 shadow-sm" title="黃色螢光筆"></button>
+                                <button onclick="applyHighlight('green')" class="w-6 h-6 rounded bg-green-300 hover:scale-110 transition border border-green-400 shadow-sm" title="綠色螢光筆"></button>
+                                <button onclick="applyHighlight('pink')" class="w-6 h-6 rounded bg-pink-300 hover:scale-110 transition border border-pink-400 shadow-sm" title="粉色螢光筆"></button>
                                 <div class="h-4 w-px bg-slate-200 mx-1"></div>
-                                <button onclick="removeHighlight()" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs"><i class="fa-solid fa-eraser"></i></button>
+                                <button onclick="removeHighlight()" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition border flex items-center justify-center text-xs" title="橡皮擦"><i class="fa-solid fa-eraser"></i></button>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="toggleBatchSelectMode()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded transition border font-medium"><i class="fa-regular fa-square-check"></i> 批量刪除管理</button>
@@ -390,6 +393,32 @@
             }
         }
 
+        /* 🌟 切換卡片防誤觸唯讀狀態 */
+        function toggleCardEditMode(btn) {
+            const card = btn.closest('.law-card');
+            const isReadonly = card.classList.contains('is-readonly');
+            const editables = card.querySelectorAll('[contenteditable]');
+
+            if (isReadonly) {
+                // 切換為：可編輯狀態
+                card.classList.remove('is-readonly');
+                editables.forEach(el => el.setAttribute('contenteditable', 'true'));
+                btn.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i> 儲存`;
+                btn.className = "text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-lg border border-emerald-300 font-bold transition flex items-center gap-1 shadow-sm";
+            } else {
+                // 切換為：唯讀防誤觸狀態
+                card.classList.add('is-readonly');
+                editables.forEach(el => el.setAttribute('contenteditable', 'false'));
+                btn.innerHTML = `<i class="fa-solid fa-pen text-blue-600"></i> 編輯`;
+                btn.className = "text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-300 font-medium transition flex items-center gap-1";
+                
+                // 存檔與同步
+                syncCurrentPageDOM();
+                refreshQuickIndex();
+                saveAllToStorage(false);
+            }
+        }
+
         /* 全站智慧搜尋 */
         function triggerGlobalSearch() {
             const input = document.getElementById('global-search-input');
@@ -504,7 +533,7 @@
                     const chapHTML = `
                         <div class="chapter-header group cursor-grab">
                             <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
-                            <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
+                            <span class="chapter-title-text" contenteditable="false" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
                             <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     `;
@@ -524,25 +553,28 @@
             saveAllToStorage(true);
         }
 
-        /* 法條卡片模板 */
+        /* 法條卡片模板 (預設 is-readonly 唯讀狀態) */
         function getLawCardHTML(title, bodyText) {
             return `
-                <div class="law-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
+                <div class="law-card is-readonly bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
                     <div class="flex justify-between items-start pt-1">
                         <div class="flex items-center gap-2">
                             <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
                             <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="false" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
                         </div>
                         <div class="flex items-center gap-2">
+                            <button onclick="toggleCardEditMode(this)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-300 font-medium transition flex items-center gap-1">
+                                <i class="fa-solid fa-pen text-blue-600"></i> 編輯
+                            </button>
                             <button onclick="toggleSingleNewLawBadge(this)" class="text-xs bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 font-medium"><i class="fa-solid fa-flag"></i> 新修法</button>
-                            <button onclick="deleteLawCard(this)" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteLawCard(this)" class="card-edit-controls text-slate-400 hover:text-red-600 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
                     
                     <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
                         <div class="law-item-section group flex justify-between items-start">
-                            <span contenteditable="true" onblur="syncCurrentPageDOM()">${bodyText}</span>
+                            <span contenteditable="false" onblur="syncCurrentPageDOM()">${bodyText}</span>
                             <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
@@ -550,17 +582,17 @@
                     <div class="law-links-section mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
                         <div class="flex items-center justify-between font-semibold text-slate-500">
                             <span class="flex items-center gap-1"><i class="fa-solid fa-link text-blue-500"></i> 相關連結與爭點補充：</span>
-                            <button onclick="addLinkToCard(this)" class="text-blue-600 hover:text-blue-800 text-[11px] font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
+                            <button onclick="addLinkToCard(this)" class="card-edit-controls text-blue-600 hover:text-blue-800 text-[11px] font-normal"><i class="fa-solid fa-plus"></i> 新增連結</button>
                         </div>
                         <div class="card-links-list space-y-1">
                             <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
-                                <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
-                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                                <span contenteditable="false" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
+                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex gap-2 pt-2 border-t border-slate-100 text-xs">
+                    <div class="card-edit-controls flex gap-2 pt-2 border-t border-slate-100 text-xs">
                         <button onclick="addSectionToCard(this, 'item')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-blue-500"></i> 新增「項」</button>
                         <button onclick="addSectionToCard(this, 'subitem')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-medium flex items-center gap-1"><i class="fa-solid fa-plus text-green-500"></i> 新增「款」</button>
                     </div>
@@ -575,7 +607,7 @@
                 const newLinkHTML = `
                     <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
                         <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
-                        <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 `;
                 linksList.insertAdjacentHTML('beforeend', newLinkHTML);
@@ -718,7 +750,7 @@
                         </div>
                     </div>
 
-                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none p-1 rounded hover:bg-slate-50">${q.title}</div>
+                    <div contenteditable="false" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none p-1 rounded hover:bg-slate-50">${q.title}</div>
 
                     <div class="space-y-2 pl-2">
                         ${(q.options || []).map((optText, oIdx) => {
@@ -731,7 +763,6 @@
                                 else if (isChosen) optionClass = "border-red-400 bg-red-100/60 font-bold text-red-900";
                             }
 
-                            // 清除選項前綴與問號號碼
                             const cleanOptText = optText
                                 .replace(/^[\(（\?][A-Da-d\?][\)）\?]\s*/, '')
                                 .replace(/^[A-Da-d\?][\.\、\s]\s*/, '')
@@ -741,7 +772,7 @@
                                 <label class="flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition ${optionClass}">
                                     <input type="radio" name="question_opt_${qIdx}" value="${optKey}" ${isChosen ? 'checked' : ''} ${isSubmitted ? 'disabled' : ''} onchange="selectQuestionOption(${qIdx}, '${optKey}')" class="mt-0.5 text-blue-600 focus:ring-blue-500">
                                     <span class="font-bold text-slate-500 mr-1">(${optKey})</span>
-                                    <span contenteditable="true" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${cleanOptText}</span>
+                                    <span contenteditable="false" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${cleanOptText}</span>
                                 </label>
                             `;
                         }).join('')}
@@ -823,34 +854,26 @@
             }
         }
 
-        /* 🌟 核心升級：修復 ? 符號、全形字元與多選項擠在同行的問題 */
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
-                // 清除全形空白與特殊無效控制碼
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
-                // 將全形字母與全形括號映射轉為標準 ASCII 半形
                 .replace(/（\s*([Ａ-Ｄａ-ｄA-Da-d\?])\s*）/g, '($1)')
                 .replace(/Ａ/g, 'A').replace(/Ｂ/g, 'B').replace(/Ｃ/g, 'C').replace(/Ｄ/g, 'D')
                 .replace(/ａ/g, 'a').replace(/ｂ/g, 'b').replace(/ｃ/g, 'c').replace(/ｄ/g, 'd')
-                // 處理被 PDF 亂碼轉成 ? 或 ( ? ) 的情況
                 .replace(/[\(（]\s*\?\s*[\)）]/g, '?')
-                // 對同一行擠在一起的選項 (A)(B) 或 ? 進行斷行分隔
                 .replace(/([^\n])\s*(\([A-Da-d]\))/g, '$1\n$2')
                 .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2');
 
-            // 針對考選部 PDF 亂碼出的 ? 進行結構預處理（四個一組修正為 (A)(B)(C)(D)）
             let lines = text.split('\n');
             let optionIndexMap = ['(A)', '(B)', '(C)', '(D)'];
             let currentOptIdx = 0;
 
             lines = lines.map(line => {
                 let trimmed = line.trim();
-                // 遇到題號，重置選項計數器
                 if (/^第?\s*[0-9\uff10-\uff19]{1,3}\s*題?[\.\、\)\s]/.test(trimmed)) {
                     currentOptIdx = 0;
                     return trimmed;
                 }
-                // 遇到以 ? 開頭的選項列
                 if (/^\?\s*/.test(trimmed)) {
                     let fixedSymbol = optionIndexMap[currentOptIdx % 4];
                     currentOptIdx++;
@@ -862,7 +885,6 @@
             return lines.join('\n');
         }
 
-        /* 寬鬆正則引擎分離題號與 (A)(B)(C)(D) */
         function parseAndImportQuestionsText(rawText) {
             if (!rawText.trim()) return alert("未檢測到試題文字內容！");
 
@@ -876,9 +898,7 @@
             let questions = [];
             let currentQ = null;
 
-            // 匹配題號 (如: 1. / 1 / (1) / １．/ 01. / 第1題)
             const questionHeaderRegex = /^第?\s*[0-9\uff10-\uff19]{1,3}\s*題?[\.\、\)\s]/;
-            // 匹配選項 (如: (A) / A. / A、 / (a) / ? )
             const optionHeaderRegex = /^[\(（][A-Da-d\?][\)）]|^[A-Da-d\?][\.\、\s]/;
 
             lines.forEach(line => {
@@ -1147,7 +1167,7 @@
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
             } else {
-                container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊此處編輯內文...");
+                container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊右上角「編輯」開始增修條文內容...");
             }
 
             refreshQuickIndex();
@@ -1294,7 +1314,7 @@
 
         function addNewBlankLawCard() {
             const container = document.getElementById('laws-container-inner');
-            container.insertAdjacentHTML('beforeend', getLawCardHTML("第 X 條（新條文）", "第 1 項：請點擊此處編輯內文..."));
+            container.insertAdjacentHTML('beforeend', getLawCardHTML("第 X 條（新條文）", "第 1 項：點擊右上角「編輯」開始增修條文內容..."));
             syncCurrentPageDOM();
             refreshQuickIndex();
             initDragAndDrop();
@@ -1369,6 +1389,15 @@
         function applyHighlight(color) {
             const sel = window.getSelection();
             if (!sel.rangeCount || sel.isCollapsed) return;
+
+            // 檢查選取範圍是否包含未開放編輯的卡片
+            let node = sel.anchorNode;
+            let card = node.nodeType === 1 ? node.closest('.law-card') : node.parentNode.closest('.law-card');
+            if (card && card.classList.contains('is-readonly')) {
+                alert("請先點擊該卡片右上角的「✏️ 編輯」按鈕，再進行劃記！");
+                return;
+            }
+
             const range = sel.getRangeAt(0);
             const span = document.createElement('span');
             span.className = `highlight-${color}`;
@@ -1384,6 +1413,13 @@
             const sel = window.getSelection();
             if (!sel.rangeCount) return;
             let node = sel.anchorNode;
+            
+            let card = node.nodeType === 1 ? node.closest('.law-card') : node.parentNode.closest('.law-card');
+            if (card && card.classList.contains('is-readonly')) {
+                alert("請先點擊該卡片右上角的「✏️ 編輯」按鈕，再清除劃記！");
+                return;
+            }
+
             while (node && node !== document.body) {
                 if (node.nodeType === 1 && node.className.includes('highlight-')) {
                     const parent = node.parentNode;
