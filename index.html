@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全功能完全修復版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (全頁面防誤觸與星號索引版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -19,7 +19,7 @@
         .law-item-section { margin-top: 8px; padding-left: 8px; border-left: 2px solid #cbd5e1; position: relative; }
         .law-subitem-section { margin-top: 4px; padding-left: 20px; color: #334155; position: relative; }
         
-        /* 唯讀模式下隱藏刪除按鈕與編輯輔助工具 */
+        /* 唯讀防誤觸模式：隱藏刪除與輔助新增按鈕 */
         .is-readonly .section-del-btn,
         .is-readonly .card-edit-controls,
         .is-readonly .drag-handle,
@@ -393,7 +393,7 @@
             }
         }
 
-        /* 🌟 切換打星星 (重點標記) 功能 */
+        /* 🌟 星號 (重點標記) 切換，並即時刷右側索引 */
         function toggleStarBadge(btn) {
             const isStarred = btn.classList.contains('is-starred');
             if (isStarred) {
@@ -410,11 +410,11 @@
             saveAllToStorage(false);
         }
 
-        /* 切換卡片防誤觸唯讀狀態 */
+        /* 🌟 切換卡片「唯讀 / 編輯」防誤觸狀態 (全頁面通用) */
         function toggleCardEditMode(btn) {
             const card = btn.closest('.law-card');
             const isReadonly = card.classList.contains('is-readonly');
-            const editables = card.querySelectorAll('[contenteditable]');
+            const editables = card.querySelectorAll('.law-card-title, .law-item-section span, .law-subitem-section span, .link-item span');
 
             if (isReadonly) {
                 card.classList.remove('is-readonly');
@@ -567,7 +567,7 @@
             saveAllToStorage(true);
         }
 
-        /* 法條卡片模板 (包含打星星重點標記) */
+        /* 法條卡片標準 HTML 模板 (含唯讀保護與打星星功能) */
         function getLawCardHTML(title, bodyText) {
             return `
                 <div class="law-card is-readonly bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
@@ -621,9 +621,10 @@
             const card = btn.closest('.law-card');
             const linksList = card.querySelector('.card-links-list');
             if (linksList) {
+                const isReadonly = card.classList.contains('is-readonly');
                 const newLinkHTML = `
                     <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
-                        <span contenteditable="true" onblur="syncCurrentPageDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
+                        <span contenteditable="${isReadonly ? 'false' : 'true'}" onblur="syncCurrentPageDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
                         <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 `;
@@ -632,7 +633,7 @@
             }
         }
 
-        /* 🌟 刷新索引並自動檢測打星星重點 */
+        /* 🌟 刷新右側索引，星號重點法條顯示 ⭐ 標籤 */
         function refreshQuickIndex() {
             document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引`;
             const container = document.getElementById('laws-container-inner');
@@ -1116,7 +1117,6 @@
             renderExamSelect();
             updateViewData();
 
-            // 🌟 確保預設打開警械使用條例頁面資料載入
             selectSubpage("sub_1", "警械使用條例", false);
 
             try {
@@ -1134,7 +1134,6 @@
                             renderExamSelect();
                             updateViewData();
 
-                            // 重新刷新當前子頁面內容
                             selectSubpage(activeSubpageId, getSubpageTitleById(activeSubpageId), false);
                         }
                         const statusEl = document.getElementById('cloud-status');
@@ -1195,18 +1194,16 @@
             initDragAndDrop();
         }
 
-        /* 🌟 切換子頁面 (修復頁面資料消失與防寫保護) */
+        /* 🌟 切換子頁面 (雙重載入保護，並確保鎖定唯讀防誤觸) */
         async function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncCurrentPageDOM();
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
             
-            // 嘗試從本地記憶體或快取中讀取
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
             } else if (db) {
-                // 如果本地無快取，嘗試從雲端異步抓取備份
                 try {
                     const doc = await db.collection('exam_pages').doc(subId).get();
                     if (doc.exists && doc.data().htmlContent) {
@@ -1437,7 +1434,7 @@
             }
         }
 
-        /* 劃記功能 */
+        /* 劃記功能 (鎖定狀態下提示解鎖) */
         function applyHighlight(color) {
             const sel = window.getSelection();
             if (!sel.rangeCount || sel.isCollapsed) return;
