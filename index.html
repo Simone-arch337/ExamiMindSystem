@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全功能完全儲存與防遺失版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (全頁面 100% 強制持久儲存版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -358,10 +358,28 @@
             } catch(e) {}
         }
 
+        /* 🌟 核心突破：1~4 分頁 DOM 現狀全面寫入記憶體 */
+        function syncAllTabsDOM() {
+            if (!activeSubpageId) return;
+
+            // 1. 同步第 1 頁（法規卡片）
+            const container = document.getElementById('laws-container-inner');
+            if (container && container.innerHTML.trim() !== "") {
+                allLawsMap[activeSubpageId] = container.innerHTML;
+            }
+
+            // 2. 同步第 2 頁（OCR 辨識文字）
+            const ocrElem = document.getElementById('ocr-text-result');
+            if (ocrElem) {
+                allOcrResultsMap[activeSubpageId] = ocrElem.value;
+            }
+
+            saveToLocalFallback();
+        }
+
         /* 🌟 全頁面、全科目、100% 雲端與本機同步儲存引擎 */
         async function saveAllToStorage(showAlert = false) {
-            syncCurrentPageDOM();
-            saveToLocalFallback();
+            syncAllTabsDOM();
 
             const statusEl = document.getElementById('cloud-status');
             if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步中...`;
@@ -391,7 +409,7 @@
                 }
 
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
-                if (showAlert) alert("🎉 所有頁面與科目資料已成功同步至雲端！");
+                if (showAlert) alert("🎉 所有頁面與 1~4 分頁資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
@@ -399,11 +417,7 @@
         }
 
         function syncCurrentPageDOM() {
-            const container = document.getElementById('laws-container-inner');
-            if (activeSubpageId && container && container.innerHTML.trim() !== "") {
-                allLawsMap[activeSubpageId] = container.innerHTML;
-                saveToLocalFallback();
-            }
+            syncAllTabsDOM();
         }
 
         /* 🌟 第 1 頁：法規卡片重點打星星 */
@@ -418,7 +432,7 @@
                 btn.classList.remove('bg-slate-50', 'text-slate-400', 'border-slate-200');
                 btn.innerHTML = `<i class="fa-solid fa-star text-amber-500"></i> 重點`;
             }
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
             refreshQuickIndex();
             saveAllToStorage(false);
         }
@@ -440,7 +454,7 @@
                 btn.innerHTML = `<i class="fa-solid fa-pen text-blue-600"></i> 編輯`;
                 btn.className = "text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-300 font-medium transition flex items-center gap-1";
                 
-                syncCurrentPageDOM();
+                syncAllTabsDOM();
                 refreshQuickIndex();
                 saveAllToStorage(false);
             }
@@ -560,7 +574,7 @@
                     const chapHTML = `
                         <div class="chapter-header group cursor-grab">
                             <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
-                            <span class="chapter-title-text" contenteditable="false" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${elem.title}</span>
+                            <span class="chapter-title-text" contenteditable="false" onblur="syncAllTabsDOM(); refreshQuickIndex();">${elem.title}</span>
                             <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     `;
@@ -588,7 +602,7 @@
                         <div class="flex items-center gap-2">
                             <span class="drag-handle text-slate-300 hover:text-slate-500 cursor-grab p-0.5"><i class="fa-solid fa-grip-vertical"></i></span>
                             <input type="checkbox" class="card-select-checkbox ${isBatchSelectMode ? '' : 'hidden'} w-4 h-4 text-blue-600 rounded">
-                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="false" onblur="syncCurrentPageDOM(); refreshQuickIndex();">${title}</h3>
+                            <h3 class="law-card-title text-lg font-bold text-slate-900 pr-12" contenteditable="false" onblur="syncAllTabsDOM(); refreshQuickIndex();">${title}</h3>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <button onclick="toggleStarBadge(this)" class="star-badge-btn text-xs bg-slate-50 text-slate-400 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
@@ -604,7 +618,7 @@
                     
                     <div class="law-card-content space-y-1.5 text-sm leading-relaxed text-slate-800">
                         <div class="law-item-section group flex justify-between items-start">
-                            <span contenteditable="false" onblur="syncCurrentPageDOM()">${bodyText}</span>
+                            <span contenteditable="false" onblur="syncAllTabsDOM()">${bodyText}</span>
                             <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
@@ -616,8 +630,8 @@
                         </div>
                         <div class="card-links-list space-y-1">
                             <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
-                                <span contenteditable="false" onblur="syncCurrentPageDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
-                                <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                                <span contenteditable="false" onblur="syncAllTabsDOM()" class="outline-none">點此編輯備註說明或網址 (如: 最高行政法院判例)</span>
+                                <button onclick="this.closest('.link-item').remove(); syncAllTabsDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         </div>
                     </div>
@@ -637,8 +651,8 @@
                 const isReadonly = card.classList.contains('is-readonly');
                 const newLinkHTML = `
                     <div class="link-item flex items-center justify-between bg-slate-50 px-2.5 py-1 rounded border border-slate-200/60">
-                        <span contenteditable="${isReadonly ? 'false' : 'true'}" onblur="syncCurrentPageDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
-                        <button onclick="this.closest('.link-item').remove(); syncCurrentPageDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                        <span contenteditable="${isReadonly ? 'false' : 'true'}" onblur="syncAllTabsDOM()" class="outline-none">點此輸入新連結或爭點備註...</span>
+                        <button onclick="this.closest('.link-item').remove(); syncAllTabsDOM(); saveAllToStorage(false);" class="section-del-btn text-slate-400 hover:text-red-500 ml-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 `;
                 linksList.insertAdjacentHTML('beforeend', newLinkHTML);
@@ -675,6 +689,7 @@
 
         /* 頁面切換與渲染機制 */
         function switchTab(tabId) {
+            syncAllTabsDOM();
             currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('content-' + tabId).classList.remove('hidden');
@@ -727,7 +742,7 @@
             switchTab('tab-notes');
         }
 
-        /* 🌟 分頁 3：個人筆記與爭點（具備防誤觸與打星星標記） */
+        /* 🌟 分頁 3：個人筆記與爭點（強效輸入即時同步） */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
@@ -742,7 +757,7 @@
                 return `
                 <div class="note-card ${isReadonly ? 'is-readonly' : ''} bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 relative transition">
                     <div class="flex justify-between items-center border-b pb-2 flex-wrap gap-2">
-                        <input type="text" value="${n.title}" ${isReadonly ? 'disabled' : ''} onchange="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-slate-800 bg-transparent focus:outline-none flex-1">
+                        <input type="text" value="${n.title}" ${isReadonly ? 'disabled' : ''} oninput="updateNoteData(${index}, 'title', this.value)" class="font-bold text-sm text-slate-800 bg-transparent focus:outline-none flex-1">
                         
                         <div class="flex items-center gap-1.5">
                             <button onclick="toggleNoteStar(${index})" class="text-xs ${isStarred ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-slate-50 text-slate-400 border-slate-200'} border px-2 py-1 rounded-lg font-bold transition flex items-center gap-1">
@@ -756,7 +771,7 @@
                             <button onclick="deleteNoteCard(${index})" class="note-del-btn text-slate-400 hover:text-red-500 text-xs p-1" title="刪除筆記"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
-                    <textarea ${isReadonly ? 'disabled' : ''} onchange="updateNoteData(${index}, 'content', this.value)" class="w-full h-32 text-xs text-slate-700 ${isReadonly ? 'bg-slate-50/50 border-transparent' : 'bg-white border-slate-200'} p-2 rounded-lg border focus:outline-none resize-none leading-relaxed transition">${n.content}</textarea>
+                    <textarea ${isReadonly ? 'disabled' : ''} oninput="updateNoteData(${index}, 'content', this.value)" class="w-full h-32 text-xs text-slate-700 ${isReadonly ? 'bg-slate-50/50 border-transparent' : 'bg-white border-slate-200'} p-2 rounded-lg border focus:outline-none resize-none leading-relaxed transition">${n.content}</textarea>
                 </div>
                 `;
             }).join('');
@@ -801,7 +816,7 @@
             }
         }
 
-        /* 🌟 分頁 4：歷屆試題與錯題卡片（具備防誤觸與打星星標記） */
+        /* 🌟 分頁 4：歷屆試題與錯題卡片（強效輸入即時同步） */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const statsBar = document.getElementById('exam-stats-bar');
@@ -857,7 +872,7 @@
                         </div>
                     </div>
 
-                    <div contenteditable="${!isReadonly}" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none p-1 rounded ${!isReadonly ? 'bg-slate-50 border border-blue-200' : ''}">${q.title}</div>
+                    <div contenteditable="${!isReadonly}" oninput="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none p-1 rounded ${!isReadonly ? 'bg-slate-50 border border-blue-200' : ''}">${q.title}</div>
 
                     <div class="space-y-2 pl-2">
                         ${(q.options || []).map((optText, oIdx) => {
@@ -879,7 +894,7 @@
                                 <label class="flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition ${optionClass}">
                                     <input type="radio" name="question_opt_${qIdx}" value="${optKey}" ${isChosen ? 'checked' : ''} ${isSubmitted ? 'disabled' : ''} onchange="selectQuestionOption(${qIdx}, '${optKey}')" class="mt-0.5 text-blue-600 focus:ring-blue-500">
                                     <span class="font-bold text-slate-500 mr-1">(${optKey})</span>
-                                    <span contenteditable="${!isReadonly}" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${cleanOptText}</span>
+                                    <span contenteditable="${!isReadonly}" oninput="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${cleanOptText}</span>
                                 </label>
                             `;
                         }).join('')}
@@ -909,7 +924,7 @@
                             <div class="font-bold text-amber-900 flex items-center gap-1.5 border-b border-amber-200/80 pb-1.5">
                                 <i class="fa-solid fa-lightbulb text-amber-500"></i> 答案與爭點詳細解析：
                             </div>
-                            <textarea ${isReadonly ? 'disabled' : ''} onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" placeholder="點此輸入全題或各選項解析與考點筆記..." class="w-full h-20 p-2 text-xs text-slate-800 bg-white border border-amber-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed">${q.analysis || ''}</textarea>
+                            <textarea ${isReadonly ? 'disabled' : ''} oninput="updateExamQuestionData(${qIdx}, 'analysis', this.value)" placeholder="點此輸入全題或各選項解析與考點筆記..." class="w-full h-20 p-2 text-xs text-slate-800 bg-white border border-amber-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed">${q.analysis || ''}</textarea>
                         </div>
                     ` : ''}
 
@@ -1153,7 +1168,7 @@
                     animation: 150,
                     handle: '.drag-handle, .law-card',
                     ghostClass: 'sortable-ghost',
-                    onEnd: function() { syncCurrentPageDOM(); refreshQuickIndex(); saveAllToStorage(false); }
+                    onEnd: function() { syncAllTabsDOM(); refreshQuickIndex(); saveAllToStorage(false); }
                 });
             }
 
@@ -1206,13 +1221,12 @@
             saveAllToStorage(false);
         }
 
-        /* 🌟 初始化與安全載入 (防覆蓋防誤刪機制) */
+        /* 🌟 初始化與安全載入 */
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
             updateViewData();
 
-            // 優先取得現有的第一頁 subId，沒有才用 "sub_1"
             let initialSubId = "sub_1";
             let initialSubTitle = "警械使用條例";
             if (systemData.exams[0]?.categories[0]?.subpages[0]) {
@@ -1231,7 +1245,6 @@
                         if (doc.exists) {
                             const cloudData = doc.data();
                             
-                            // 智慧保留：僅當雲端存在且本地無資料時合併，不直接用空白雲端覆蓋本地
                             if (cloudData.systemData && cloudData.systemData.exams && cloudData.systemData.exams.length > 0) {
                                 systemData = cloudData.systemData;
                             }
@@ -1270,7 +1283,7 @@
         }
 
         function changeExam(index) {
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
             currentExamIndex = parseInt(index);
             updateViewData();
             const firstSub = systemData.exams[currentExamIndex]?.categories[0]?.subpages[0];
@@ -1313,9 +1326,9 @@
             initDragAndDrop();
         }
 
-        /* 切換子頁面 (安全讀取) */
+        /* 🌟 切換子頁面（切換前先同步 1~4 所有頁面） */
         async function selectSubpage(subId, title, shouldSync = true) {
-            if(shouldSync) syncCurrentPageDOM();
+            if(shouldSync) syncAllTabsDOM();
             activeSubpageId = subId;
             document.getElementById('current-sublaw-title').innerText = title;
             const container = document.getElementById('laws-container-inner');
@@ -1479,12 +1492,12 @@
             const chapHTML = `
                 <div class="chapter-header group cursor-grab">
                     <span class="drag-handle text-slate-300 hover:text-slate-500 mr-2"><i class="fa-solid fa-grip-vertical"></i></span>
-                    <span class="chapter-title-text" contenteditable="true" onblur="syncCurrentPageDOM(); refreshQuickIndex();">新章節標題</span>
+                    <span class="chapter-title-text" contenteditable="true" onblur="syncAllTabsDOM(); refreshQuickIndex();">新章節標題</span>
                     <button onclick="deleteChapterHeader(this)" title="刪除此章節標題" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs ml-2 transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', chapHTML);
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
             refreshQuickIndex();
             initDragAndDrop();
         }
@@ -1492,7 +1505,7 @@
         function addNewBlankLawCard() {
             const container = document.getElementById('laws-container-inner');
             container.insertAdjacentHTML('beforeend', getLawCardHTML("第 X 條（新條文）", "第 1 項：點擊右上角「編輯」開始增修條文內容..."));
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
             refreshQuickIndex();
             initDragAndDrop();
         }
@@ -1500,7 +1513,7 @@
         function deleteChapterHeader(btn) {
             if(confirm("確定刪除此章節標題？")) {
                 btn.closest('.chapter-header').remove();
-                syncCurrentPageDOM();
+                syncAllTabsDOM();
                 refreshQuickIndex();
             }
         }
@@ -1508,14 +1521,14 @@
         function deleteLawCard(btn) {
             if(confirm("確定要刪除這張條文卡片？")) {
                 btn.closest('.law-card').remove();
-                syncCurrentPageDOM();
+                syncAllTabsDOM();
                 refreshQuickIndex();
             }
         }
 
         function deleteSection(btn) {
             btn.closest('.law-item-section, .law-subitem-section').remove();
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
         }
 
         function addSectionToCard(btn, type) {
@@ -1526,12 +1539,12 @@
             
             const html = `
                 <div class="${className} group flex justify-between items-start">
-                    <span contenteditable="true" onblur="syncCurrentPageDOM()">${placeholder}</span>
+                    <span contenteditable="true" onblur="syncAllTabsDOM()">${placeholder}</span>
                     <button onclick="deleteSection(this)" class="section-del-btn text-slate-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             `;
             contentBox.insertAdjacentHTML('beforeend', html);
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
         }
 
         function toggleSingleNewLawBadge(btn) {
@@ -1539,7 +1552,7 @@
             btn.classList.toggle('text-white');
             btn.classList.toggle('bg-red-50');
             btn.classList.toggle('text-red-600');
-            syncCurrentPageDOM();
+            syncAllTabsDOM();
         }
 
         function toggleBatchSelectMode() {
@@ -1557,7 +1570,7 @@
             if (selected.length === 0) return alert("請先選取要刪除的條文！");
             if (confirm(`確定要刪除選取的 ${selected.length} 個條文卡片？`)) {
                 selected.forEach(cb => cb.closest('.law-card').remove());
-                syncCurrentPageDOM();
+                syncAllTabsDOM();
                 refreshQuickIndex();
             }
         }
@@ -1579,7 +1592,7 @@
             span.className = `highlight-${color}`;
             try {
                 range.surroundContents(span);
-                syncCurrentPageDOM();
+                syncAllTabsDOM();
             } catch(e) {
                 alert("選取範圍包含多個元素，請單純選擇文字段落進行劃記！");
             }
@@ -1601,7 +1614,7 @@
                     const parent = node.parentNode;
                     while (node.firstChild) parent.insertBefore(node.firstChild, node);
                     parent.removeChild(node);
-                    syncCurrentPageDOM();
+                    syncAllTabsDOM();
                     break;
                 }
                 node = node.parentNode;
