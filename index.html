@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全頁面防誤觸與打星星版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (亂碼選項強效修復版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -196,7 +196,7 @@
                     </div>
                 </div>
 
-                <!-- 頁面 3：個人筆記與爭點區 (具備防誤觸與打星星) -->
+                <!-- 頁面 3：個人筆記與爭點區 -->
                 <div id="content-tab-notes" class="p-6 space-y-6 tab-content hidden">
                     <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <h3 class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> 本分頁專屬爭點與重點筆記</h3>
@@ -205,7 +205,7 @@
                     <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
 
-                <!-- 頁面 4：歷屆試題與錯題檢討區 (具備防誤觸與打星星) -->
+                <!-- 頁面 4：歷屆試題與錯題檢討區 -->
                 <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
@@ -280,7 +280,7 @@
                 <button onclick="closeExamBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-xs text-slate-500 leading-relaxed">
-                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> 若上方 PDF 提取的文字出現亂碼，您可以直接在下方框內**修正文字、清理亂碼或將 (A)(B)(C)(D) 選項按 Enter 鍵手動分行**：
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> 系統已自動將 PDF 的正方形亂碼轉回 (A)(B)(C)(D)。您可以直接在下方框內微調文字後點擊「自動切割與生成試題」：
             </p>
             <textarea id="custom-exam-text" class="w-full h-72 p-3 border rounded-lg text-xs leading-relaxed font-mono focus:ring-2 focus:ring-blue-500" placeholder="例如：&#10;1 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要&#10;(C)...&#10;(D)..."></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
@@ -727,7 +727,7 @@
             switchTab('tab-notes');
         }
 
-        /* 🌟 分頁 3：個人筆記與爭點（新增防誤觸與打星星功能） */
+        /* 分頁 3：個人筆記與爭點 */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
@@ -736,7 +736,7 @@
                 return;
             }
             container.innerHTML = notes.map((n, index) => {
-                const isReadonly = n.isReadonly !== false; // 預設唯讀
+                const isReadonly = n.isReadonly !== false;
                 const isStarred = !!n.isStarred;
 
                 return `
@@ -801,7 +801,7 @@
             }
         }
 
-        /* 🌟 分頁 4：歷屆試題與錯題卡片（新增防誤觸與打星星功能） */
+        /* 分頁 4：歷屆試題與錯題卡片 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const statsBar = document.getElementById('exam-stats-bar');
@@ -822,7 +822,7 @@
 
             container.innerHTML = questions.map((q, qIdx) => {
                 const isSubmitted = !!q.submitted;
-                const isReadonly = q.isReadonly !== false; // 預設唯讀
+                const isReadonly = q.isReadonly !== false;
                 const isStarred = !!q.isStarred;
                 const userChoice = q.userChoice || '';
                 const correctAnswer = (q.answer || 'A').trim().toUpperCase();
@@ -873,7 +873,7 @@
                             const cleanOptText = optText
                                 .replace(/^[\(（\?][A-Da-d\?][\)）\?]\s*/, '')
                                 .replace(/^[A-Da-d\?][\.\、\s]\s*/, '')
-                                .replace(/^\?\s*/, '');
+                                .replace(/^[\uFFFD\u0000-\u001F\u007F-\u009F]\s*/, '');
 
                             return `
                                 <label class="flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition ${optionClass}">
@@ -935,7 +935,7 @@
             }
         }
 
-        /* 考選部 PDF 試題抽取與亂碼自動修正引擎 */
+        /* 🌟 考選部 PDF 試題抽取與正方形亂碼轉碼修復引擎 */
         async function handlePDFExamUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -973,18 +973,20 @@
                 input.value = '';
             } catch (e) {
                 console.error("PDF 解析失敗：", e);
-                alert("PDF 自動提取完成，已跳出編輯視窗，您可以手動刪除亂碼與分行！");
+                alert("PDF 自動提取完成，已跳出編輯視窗，您可以手動微調與確認！");
                 openExamBatchModal();
             }
         }
 
+        /* 🌟 智慧正方形亂碼替換與選項正規化函數 */
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
+                // 清理全形文字
                 .replace(/（\s*([Ａ-Ｄａ-ｄA-Da-d\?])\s*）/g, '($1)')
                 .replace(/Ａ/g, 'A').replace(/Ｂ/g, 'B').replace(/Ｃ/g, 'C').replace(/Ｄ/g, 'D')
                 .replace(/ａ/g, 'a').replace(/ｂ/g, 'b').replace(/ｃ/g, 'c').replace(/ｄ/g, 'd')
-                .replace(/[\(（]\s*\?\s*[\)）]/g, '?')
+                // 自動將黏在一起的標號換行
                 .replace(/([^\n])\s*(\([A-Da-d]\))/g, '$1\n$2')
                 .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2');
 
@@ -998,10 +1000,11 @@
                     currentOptIdx = 0;
                     return trimmed;
                 }
-                if (/^\?\s*/.test(trimmed)) {
+                // 將正方形亂碼 (如 \uFFFD 或獨立的 ?) 自動替換為標準 (A)(B)(C)(D)
+                if (/^[\uFFFD\?\u25A0\u25A1\u25A2\u25A3]\s*/.test(trimmed)) {
                     let fixedSymbol = optionIndexMap[currentOptIdx % 4];
                     currentOptIdx++;
-                    return trimmed.replace(/^\?\s*/, fixedSymbol + ' ');
+                    return trimmed.replace(/^[\uFFFD\?\u25A0\u25A1\u25A2\u25A3]\s*/, fixedSymbol + ' ');
                 }
                 return trimmed;
             });
@@ -1009,6 +1012,7 @@
             return lines.join('\n');
         }
 
+        /* 🌟 自動識別並切割題號與選項 */
         function parseAndImportQuestionsText(rawText) {
             if (!rawText.trim()) return alert("未檢測到試題文字內容！");
 
@@ -1023,7 +1027,8 @@
             let currentQ = null;
 
             const questionHeaderRegex = /^第?\s*[0-9\uff10-\uff19]{1,3}\s*題?[\.\、\)\s]/;
-            const optionHeaderRegex = /^[\(（][A-Da-d\?][\)）]|^[A-Da-d\?][\.\、\s]/;
+            // 涵蓋標準標號、全形標號、以及沒修復完全的正方形亂碼
+            const optionHeaderRegex = /^[\(（][A-Da-d\?][\)）]|^[A-Da-d\?][\.\、\s]|^[\uFFFD\?\u25A0\u25A1\u25A2\u25A3]/;
 
             lines.forEach(line => {
                 const trimmed = line.trim();
@@ -1044,7 +1049,7 @@
             });
             if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
 
-            if (questions.length === 0) return alert("未成功拆分題目！請確認文字框內是否包含題號與 (A)(B)(C)(D) 選項標籤。");
+            if (questions.length === 0) return alert("未成功拆分題目！請確認文字框內是否包含題號與選項標籤。");
 
             if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
             allExamQuestionsMap[activeSubpageId] = allExamQuestionsMap[activeSubpageId].concat(questions);
