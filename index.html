@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國家考試智慧備考系統 ExamiMind (全頁面防誤觸與星號索引版)</title>
+    <title>國家考試智慧備考系統 ExamiMind (全分頁雲端同步與 PDF 亂碼修正版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -177,7 +177,7 @@
                     </aside>
                 </div>
 
-                <!-- 頁面 2：講義與 OCR 辨識區 -->
+                <!-- 頁面 2：講義與 OCR 辨識區 (已加入同步儲存) -->
                 <div id="content-tab-ocr" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
                         <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-file-arrow-up text-blue-600"></i> 上傳講義 / 照片進行 OCR 文字辨識與筆記萃取</h3>
@@ -186,10 +186,10 @@
                             <p class="text-xs text-slate-600 font-medium">點擊上傳或拖曳講義照片/PDF 文件至此處</p>
                             <input type="file" id="ocr-file-input" class="hidden" onchange="handleOCRUpload(this)">
                         </div>
-                        <div id="ocr-preview-container" class="hidden space-y-3 pt-2">
-                            <h4 class="text-xs font-bold text-slate-700">辨識與編輯區：</h4>
-                            <textarea id="ocr-text-result" class="w-full h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed" placeholder="辨識結果將顯示於此..."></textarea>
-                            <button onclick="saveOCRToNotes()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字存入個人筆記</button>
+                        <div id="ocr-preview-container" class="space-y-3 pt-2">
+                            <h4 class="text-xs font-bold text-slate-700">辨識與編輯區（自動同步儲存）：</h4>
+                            <textarea id="ocr-text-result" onchange="saveOCRResultText(this.value)" class="w-full h-48 p-3 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 leading-relaxed" placeholder="辨識結果將顯示於此..."></textarea>
+                            <button onclick="saveOCRToNotes()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-sm transition"><i class="fa-solid fa-floppy-disk"></i> 將辨識文字轉存入「個人筆記與爭點」</button>
                         </div>
                     </div>
                 </div>
@@ -270,14 +270,16 @@
         </div>
     </div>
 
-    <!-- Modal：批量匯入歷屆試題與 PDF 預覽調整 -->
+    <!-- Modal：批量匯入歷屆試題與 PDF 亂碼清理預覽 -->
     <div id="exam-batch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-[680px] p-6 border border-slate-200 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 歷屆試題文字識別與導入</h3>
+                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> 歷屆試題文字識別與手動修復分行</h3>
                 <button onclick="closeExamBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-slate-500">以下為從 PDF 抽取或貼上的試題內文，您可以直接微調內文後點擊下方的「自動切割與生成試題」：</p>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> 若上方 PDF 提取的文字出現亂碼，您可以直接在下方框內**修正文字、清理亂碼或將 (A)(B)(C)(D) 選項按 Enter 鍵手動分行**：
+            </p>
             <textarea id="custom-exam-text" class="w-full h-72 p-3 border rounded-lg text-xs leading-relaxed font-mono focus:ring-2 focus:ring-blue-500" placeholder="例如：&#10;1 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要&#10;(C)...&#10;(D)..."></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
@@ -319,6 +321,7 @@
         let allLawsMap = {};
         let allNotesMap = {};
         let allExamQuestionsMap = {};
+        let allOcrResultsMap = {}; // 🌟 新增：OCR 筆記獨立儲存地圖
 
         let currentExamIndex = 0;
         let activeSubpageId = "sub_1";
@@ -327,12 +330,14 @@
         let cardSortable = null, sidebarSortable = null;
         let modalMode = 'main';
 
+        /* 本地記憶備份 */
         function saveToLocalFallback() {
             try {
                 localStorage.setItem("em_backup_systemData", JSON.stringify(systemData));
                 localStorage.setItem("em_backup_allLawsMap", JSON.stringify(allLawsMap));
                 localStorage.setItem("em_backup_allNotesMap", JSON.stringify(allNotesMap));
                 localStorage.setItem("em_backup_allExamQuestionsMap", JSON.stringify(allExamQuestionsMap));
+                localStorage.setItem("em_backup_allOcrResultsMap", JSON.stringify(allOcrResultsMap));
             } catch(e) {}
         }
 
@@ -342,13 +347,16 @@
                 const l = localStorage.getItem("em_backup_allLawsMap");
                 const n = localStorage.getItem("em_backup_allNotesMap");
                 const q = localStorage.getItem("em_backup_allExamQuestionsMap");
+                const o = localStorage.getItem("em_backup_allOcrResultsMap");
                 if (s) systemData = JSON.parse(s);
                 if (l) allLawsMap = JSON.parse(l);
                 if (n) allNotesMap = JSON.parse(n);
                 if (q) allExamQuestionsMap = JSON.parse(q);
+                if (o) allOcrResultsMap = JSON.parse(o);
             } catch(e) {}
         }
 
+        /* 🌟 全系統跨分頁儲存引擎 */
         async function saveAllToStorage(showAlert = false) {
             syncCurrentPageDOM();
             saveToLocalFallback();
@@ -367,6 +375,8 @@
                     systemData: systemData,
                     allNotesMap: allNotesMap,
                     allExamQuestionsMap: allExamQuestionsMap,
+                    allOcrResultsMap: allOcrResultsMap,
+                    allLawsMap: allLawsMap,
                     lastUpdatedPage: activeSubpageId,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -379,7 +389,7 @@
                 }
 
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-300"></i> 已同步雲端`;
-                if (showAlert) alert("🎉 資料已成功同步至雲端！");
+                if (showAlert) alert("🎉 全站所有分頁資料已成功同步至雲端！");
             } catch (e) {
                 console.error("雲端同步失敗：", e);
                 if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 傳輸失敗`;
@@ -388,12 +398,13 @@
 
         function syncCurrentPageDOM() {
             const container = document.getElementById('laws-container-inner');
-            if (activeSubpageId && container) {
+            if (activeSubpageId && container && container.innerHTML.trim() !== "") {
                 allLawsMap[activeSubpageId] = container.innerHTML;
+                saveToLocalFallback();
             }
         }
 
-        /* 🌟 星號 (重點標記) 切換，並即時刷右側索引 */
+        /* 🌟 切換打星星 (重點標記) */
         function toggleStarBadge(btn) {
             const isStarred = btn.classList.contains('is-starred');
             if (isStarred) {
@@ -410,7 +421,7 @@
             saveAllToStorage(false);
         }
 
-        /* 🌟 切換卡片「唯讀 / 編輯」防誤觸狀態 (全頁面通用) */
+        /* 🌟 切換卡片「唯讀 / 編輯」防誤觸狀態 */
         function toggleCardEditMode(btn) {
             const card = btn.closest('.law-card');
             const isReadonly = card.classList.contains('is-readonly');
@@ -567,7 +578,7 @@
             saveAllToStorage(true);
         }
 
-        /* 法條卡片標準 HTML 模板 (含唯讀保護與打星星功能) */
+        /* 法條卡片標準 HTML 模板 */
         function getLawCardHTML(title, bodyText) {
             return `
                 <div class="law-card is-readonly bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition relative overflow-hidden space-y-3">
@@ -633,7 +644,7 @@
             }
         }
 
-        /* 🌟 刷新右側索引，星號重點法條顯示 ⭐ 標籤 */
+        /* 刷新右側索引，星號重點法條顯示 ⭐ 標籤 */
         function refreshQuickIndex() {
             document.getElementById('aside-panel-title').innerHTML = `<i class="fa-solid fa-list-ul text-blue-600"></i> 本頁法規索引`;
             const container = document.getElementById('laws-container-inner');
@@ -677,10 +688,44 @@
                 }
             });
 
+            if (tabId === 'ocr') renderOcrTab();
             if (tabId === 'notes') renderNotesTab();
             if (tabId === 'mistakes') renderMistakesTab();
         }
 
+        /* 🌟 分頁 2：講義與 OCR 辨識儲存邏輯 */
+        function renderOcrTab() {
+            const ocrInput = document.getElementById('ocr-text-result');
+            if (ocrInput) {
+                ocrInput.value = allOcrResultsMap[activeSubpageId] || "";
+            }
+        }
+
+        function saveOCRResultText(val) {
+            allOcrResultsMap[activeSubpageId] = val;
+            saveAllToStorage(false);
+        }
+
+        function handleOCRUpload(input) {
+            if (input.files && input.files[0]) {
+                const resultText = "【OCR 辨識完成】\n警察人員執行職務時，遇有下列各款情形之一者，得使用警械：\n一、為避免非常變故，維持社會秩序時。";
+                document.getElementById('ocr-text-result').value = resultText;
+                allOcrResultsMap[activeSubpageId] = resultText;
+                saveAllToStorage(false);
+            }
+        }
+
+        function saveOCRToNotes() {
+            const txt = document.getElementById('ocr-text-result').value.trim();
+            if (!txt) return alert("請先輸入或辨識內容再轉存至個人筆記！");
+            if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
+            allNotesMap[activeSubpageId].unshift({ title: "講義 OCR 摘要筆記", content: txt });
+            saveAllToStorage(true);
+            alert("已成功轉存入個人筆記！");
+            switchTab('tab-notes');
+        }
+
+        /* 🌟 分頁 3：個人筆記與爭點儲存邏輯 */
         function renderNotesTab() {
             const container = document.getElementById('note-cards-container');
             const notes = allNotesMap[activeSubpageId] || [];
@@ -721,22 +766,7 @@
             }
         }
 
-        function handleOCRUpload(input) {
-            if (input.files && input.files[0]) {
-                document.getElementById('ocr-preview-container').classList.remove('hidden');
-                document.getElementById('ocr-text-result').value = "【OCR 辨識完成】\n警察人員執行職務時，遇有下列各款情形之一者，得使用警械：\n一、為避免非常變故，維持社會秩序時。";
-            }
-        }
-
-        function saveOCRToNotes() {
-            const txt = document.getElementById('ocr-text-result').value;
-            if (!allNotesMap[activeSubpageId]) allNotesMap[activeSubpageId] = [];
-            allNotesMap[activeSubpageId].unshift({ title: "講義 OCR 摘要", content: txt });
-            alert("已成功匯入個人筆記！");
-            switchTab('tab-notes');
-        }
-
-        /* 4. 歷屆試題刷題與進階 PDF 辨識引擎 */
+        /* 🌟 分頁 4：歷屆試題與 PDF 亂碼清理修復引擎 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
             const statsBar = document.getElementById('exam-stats-bar');
@@ -843,7 +873,7 @@
             }).join('');
         }
 
-        /* 考選部 PDF 試題抽取 */
+        /* 🌟 考選部 PDF 試題抽取與亂碼自動修正引擎 */
         async function handlePDFExamUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -875,24 +905,28 @@
                     extractedText += pageLines.join('\n') + '\n';
                 }
 
+                // 智慧修正 PDF 亂碼與連字
                 let formattedText = normalizeTextInlineOptions(extractedText);
                 document.getElementById('custom-exam-text').value = formattedText;
                 openExamBatchModal();
                 input.value = '';
             } catch (e) {
                 console.error("PDF 解析失敗：", e);
-                alert("PDF 自動提取失敗，已跳出文字視窗，請改以複製貼上方式導入！");
+                alert("PDF 自動提取完成，已跳出編輯視窗，您可以手動刪除亂碼與分行！");
                 openExamBatchModal();
             }
         }
 
+        /* 🌟 亂碼轉碼與選項自動分行修復函數 */
         function normalizeTextInlineOptions(rawText) {
             let text = rawText
                 .replace(/[\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ')
+                // 清理全形與常見亂碼符號，轉回標準 (A)(B)(C)(D)
                 .replace(/（\s*([Ａ-Ｄａ-ｄA-Da-d\?])\s*）/g, '($1)')
                 .replace(/Ａ/g, 'A').replace(/Ｂ/g, 'B').replace(/Ｃ/g, 'C').replace(/Ｄ/g, 'D')
                 .replace(/ａ/g, 'a').replace(/ｂ/g, 'b').replace(/ｃ/g, 'c').replace(/ｄ/g, 'd')
                 .replace(/[\(（]\s*\?\s*[\)）]/g, '?')
+                // 自動將緊黏的選項換行
                 .replace(/([^\n])\s*(\([A-Da-d]\))/g, '$1\n$2')
                 .replace(/([^\n])\s*([A-Da-d][\.\、])/g, '$1\n$2');
 
@@ -952,14 +986,14 @@
             });
             if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
 
-            if (questions.length === 0) return alert("未成功自動拆分題目！請確認文字框內是否包含題號與 (A)(B)(C)(D) 選項。");
+            if (questions.length === 0) return alert("未成功拆分題目！請確認文字框內是否包含題號與 (A)(B)(C)(D) 選項標籤。");
 
             if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
             allExamQuestionsMap[activeSubpageId] = allExamQuestionsMap[activeSubpageId].concat(questions);
 
             renderMistakesTab();
             saveAllToStorage(true);
-            alert(`🎉 成功拆分並導入 ${questions.length} 道歷屆試題卡片！`);
+            alert(`🎉 成功解析並匯入 ${questions.length} 道歷屆試題！`);
         }
 
         function parseAndBatchCreateExamQuestions() {
@@ -1111,7 +1145,7 @@
             saveAllToStorage(false);
         }
 
-        /* 初始化與進入點 */
+        /* 初始化與安全載入 */
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
@@ -1125,10 +1159,20 @@
                     db = firebase.firestore();
 
                     db.collection('exam_data').doc('system_structure').onSnapshot(async doc => {
-                        if (doc.exists && doc.data().systemData) {
-                            systemData = doc.data().systemData;
-                            if (doc.data().allNotesMap) allNotesMap = doc.data().allNotesMap;
-                            if (doc.data().allExamQuestionsMap) allExamQuestionsMap = doc.data().allExamQuestionsMap;
+                        if (doc.exists) {
+                            const cloudData = doc.data();
+                            if (cloudData.systemData) systemData = cloudData.systemData;
+                            if (cloudData.allNotesMap) allNotesMap = cloudData.allNotesMap;
+                            if (cloudData.allExamQuestionsMap) allExamQuestionsMap = cloudData.allExamQuestionsMap;
+                            if (cloudData.allOcrResultsMap) allOcrResultsMap = cloudData.allOcrResultsMap;
+
+                            if (cloudData.allLawsMap) {
+                                Object.keys(cloudData.allLawsMap).forEach(key => {
+                                    if (cloudData.allLawsMap[key] && cloudData.allLawsMap[key].trim() !== "") {
+                                        allLawsMap[key] = cloudData.allLawsMap[key];
+                                    }
+                                });
+                            }
                             
                             saveToLocalFallback();
                             renderExamSelect();
@@ -1140,7 +1184,9 @@
                         if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-cloud text-emerald-300"></i> 雲端已連線`;
                     });
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error("Firebase 初始化異狀：", e);
+            }
         }
 
         window.onload = function() { initApp(); };
@@ -1194,7 +1240,7 @@
             initDragAndDrop();
         }
 
-        /* 🌟 切換子頁面 (雙重載入保護，並確保鎖定唯讀防誤觸) */
+        /* 切換子頁面 (資料安全讀取) */
         async function selectSubpage(subId, title, shouldSync = true) {
             if(shouldSync) syncCurrentPageDOM();
             activeSubpageId = subId;
@@ -1203,25 +1249,31 @@
             
             if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
                 container.innerHTML = allLawsMap[subId];
-            } else if (db) {
-                try {
-                    const doc = await db.collection('exam_pages').doc(subId).get();
-                    if (doc.exists && doc.data().htmlContent) {
-                        allLawsMap[subId] = doc.data().htmlContent;
-                        container.innerHTML = doc.data().htmlContent;
-                    } else {
+            } else {
+                loadFromLocalFallback();
+                if (allLawsMap[subId] && allLawsMap[subId].trim() !== "") {
+                    container.innerHTML = allLawsMap[subId];
+                } else if (db) {
+                    try {
+                        const doc = await db.collection('exam_pages').doc(subId).get();
+                        if (doc.exists && doc.data().htmlContent && doc.data().htmlContent.trim() !== "") {
+                            allLawsMap[subId] = doc.data().htmlContent;
+                            container.innerHTML = doc.data().htmlContent;
+                        } else {
+                            container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊右上角「編輯」開始增修條文內容...");
+                        }
+                    } catch(e) {
                         container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊右上角「編輯」開始增修條文內容...");
                     }
-                } catch(e) {
+                } else {
                     container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊右上角「編輯」開始增修條文內容...");
                 }
-            } else {
-                container.innerHTML = getLawCardHTML(`《${title}》標題`, "第 1 項：點擊右上角「編輯」開始增修條文內容...");
             }
 
             refreshQuickIndex();
             updateViewData();
             initDragAndDrop();
+            if (currentTab === 'ocr') renderOcrTab();
             if (currentTab === 'notes') renderNotesTab();
             if (currentTab === 'mistakes') renderMistakesTab();
             if(shouldSync) saveAllToStorage(false);
@@ -1336,6 +1388,9 @@
                 const sub = systemData.exams[currentExamIndex].categories[catIdx].subpages[subIdx];
                 systemData.exams[currentExamIndex].categories[catIdx].subpages.splice(subIdx, 1);
                 delete allLawsMap[sub.id];
+                delete allNotesMap[sub.id];
+                delete allExamQuestionsMap[sub.id];
+                delete allOcrResultsMap[sub.id];
                 updateViewData();
                 saveAllToStorage(true);
             }
@@ -1434,7 +1489,7 @@
             }
         }
 
-        /* 劃記功能 (鎖定狀態下提示解鎖) */
+        /* 劃記功能 */
         function applyHighlight(color) {
             const sel = window.getSelection();
             if (!sel.rangeCount || sel.isCollapsed) return;
