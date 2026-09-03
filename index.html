@@ -7,6 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <!-- PDF.js 解析庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+
     <style>
         .highlight-yellow { background-color: #fef08a; padding: 2px 4px; border-radius: 4px; }
         .highlight-green { background-color: #bbf7d0; padding: 2px 4px; border-radius: 4px; }
@@ -196,15 +200,27 @@
                     <div id="note-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
 
-                <!-- 頁面 4：歷屆試題與錯題檢討區 -->
+                <!-- 頁面 4：歷屆試題與錯題檢討區 (升級版) -->
                 <div id="content-tab-mistakes" class="p-6 space-y-6 tab-content hidden">
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> 歷屆試題與錯題檢討資料庫</h3>
+                        <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-circle-xmark text-red-500"></i> 歷屆試題與線上測驗刷題庫
+                            </h3>
                             <div class="flex gap-2">
-                                <button onclick="openExamBatchModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-wand-magic-sparkles"></i> 智能匯入整份歷屆試題</button>
+                                <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition">
+                                    <i class="fa-solid fa-file-pdf"></i> 上傳考選部 PDF 試題
+                                    <input type="file" id="pdf-exam-file-input" accept="application/pdf" class="hidden" onchange="handlePDFExamUpload(this)">
+                                </label>
+                                <button onclick="openExamBatchModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-wand-magic-sparkles"></i> 貼上文字批量匯入</button>
                                 <button onclick="addNewExamQuestionCard()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-plus text-green-400"></i> 手動新增單題</button>
                             </div>
+                        </div>
+
+                        <!-- 答題進度條與重測 -->
+                        <div id="exam-stats-bar" class="hidden bg-slate-50 border p-3 rounded-xl flex justify-between items-center text-xs">
+                            <span id="exam-progress-text" class="font-bold text-slate-700"><i class="fa-solid fa-list-check text-blue-600"></i> 已完成作答：0 / 0 題</span>
+                            <button onclick="resetAllQuestionAnswers()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1 rounded font-semibold transition"><i class="fa-solid fa-rotate-left"></i> 全頁重測</button>
                         </div>
 
                         <div id="mistakes-questions-list" class="space-y-4"></div>
@@ -215,7 +231,7 @@
         </main>
     </div>
 
-    <!-- Modal：新增/編輯頁面 (修復完成) -->
+    <!-- Modal：新增/編輯頁面 -->
     <div id="page-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl w-96 p-6 border border-slate-200 space-y-4">
             <h3 class="text-base font-bold text-slate-900" id="modal-title">新增頁面</h3>
@@ -259,7 +275,7 @@
                 <button onclick="closeExamBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-xs text-slate-500">直接貼上整份試題文字，系統自動分割題號、題目與選項卡片：</p>
-            <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要"></textarea>
+            <textarea id="custom-exam-text" class="w-full h-60 p-3 border rounded-lg text-xs leading-relaxed" placeholder="例如：&#10;1. 關於警械使用條例之規定，下列何者正確？&#10;(A) 警察人員執行職務時得隨時使用槍械&#10;(B) 使用警械應基於急迫需要&#10;(C)...&#10;(D)..."></textarea>
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button onclick="closeExamBatchModal()" class="px-3 py-1.5 text-xs text-slate-600">取消</button>
                 <button onclick="parseAndBatchCreateExamQuestions()" class="px-5 py-1.5 text-xs bg-blue-600 text-white rounded font-bold">自動切割與生成試題</button>
@@ -306,7 +322,7 @@
         let currentTab = "tab-law";
         let isBatchSelectMode = false;
         let cardSortable = null, sidebarSortable = null;
-        let modalMode = 'main'; // 'main' 或 'sub'
+        let modalMode = 'main';
 
         function saveToLocalFallback() {
             try {
@@ -656,56 +672,139 @@
             switchTab('tab-notes');
         }
 
+        /* 🌟 重磅升級：4. 歷屆試題與線上互動測驗引擎 */
         function renderMistakesTab() {
             const container = document.getElementById('mistakes-questions-list');
+            const statsBar = document.getElementById('exam-stats-bar');
             const questions = allExamQuestionsMap[activeSubpageId] || [];
 
             if (questions.length === 0) {
-                container.innerHTML = `<div class="text-slate-400 text-xs italic text-center py-8">本頁面尚無歷屆試題，請點擊上方按鈕「智能匯入整份試題」。</div>`;
+                statsBar.classList.add('hidden');
+                container.innerHTML = `<div class="text-slate-400 text-xs italic text-center py-8">本頁面尚無歷屆試題，請點擊上方按鈕上傳考選部 PDF 或文字智能匯入。</div>`;
                 return;
             }
 
-            const currentCatSubpages = systemData.exams[currentExamIndex]?.categories[0]?.subpages || [];
+            statsBar.classList.remove('hidden');
+            let submittedCount = questions.filter(q => q.submitted).length;
+            document.getElementById('exam-progress-text').innerHTML = `<i class="fa-solid fa-list-check text-blue-600"></i> 已完成作答：${submittedCount} / ${questions.length} 題`;
 
-            container.innerHTML = questions.map((q, qIdx) => `
-                <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 relative">
-                    <div class="flex justify-between items-start border-b pb-2">
-                        <span class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                            <i class="fa-regular fa-circle-question text-blue-600"></i> 第 ${qIdx + 1} 題
-                        </span>
+            const currentCatSubpages = systemData.exams[currentExamIndex]?.categories[0]?.subpages || [];
+            const optionLabels = ['A', 'B', 'C', 'D'];
+
+            container.innerHTML = questions.map((q, qIdx) => {
+                const isSubmitted = !!q.submitted;
+                const userChoice = q.userChoice || '';
+                const correctAnswer = (q.answer || 'A').trim().toUpperCase();
+                const isCorrect = userChoice === correctAnswer;
+
+                return `
+                <div class="bg-white rounded-xl border ${isSubmitted ? (isCorrect ? 'border-emerald-300 bg-emerald-50/10' : 'border-red-300 bg-red-50/10') : 'border-slate-200'} p-5 shadow-sm space-y-4 relative transition">
+                    
+                    <div class="flex justify-between items-start border-b pb-2 flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                <i class="fa-regular fa-circle-question text-blue-600"></i> 第 ${qIdx + 1} 題
+                            </span>
+                            ${isSubmitted ? (isCorrect ? 
+                                `<span class="bg-emerald-100 text-emerald-700 font-bold text-xs px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-check"></i> 回答正確</span>` : 
+                                `<span class="bg-red-100 text-red-700 font-bold text-xs px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-xmark"></i> 回答錯誤</span>`) : ''}
+                        </div>
                         <div class="flex items-center gap-2">
                             <select onchange="reassignQuestionSubpage(${qIdx}, this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 text-slate-700">
                                 <option value="">指派至法條分頁...</option>
                                 ${currentCatSubpages.map(s => `<option value="${s.id}" ${s.id === activeSubpageId ? 'selected' : ''}>${s.title}</option>`).join('')}
                             </select>
-                            <button onclick="deleteExamQuestion(${qIdx})" class="text-slate-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteExamQuestion(${qIdx})" class="text-slate-400 hover:text-red-500 text-xs p-1" title="刪除此題"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
-                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none">${q.title}</div>
-                    <div class="space-y-1 pl-2 text-xs text-slate-600">
-                        ${(q.options || []).map((opt, oIdx) => `
-                            <div class="flex items-center gap-2">
-                                <span contenteditable="true" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${opt}</span>
-                            </div>
-                        `).join('')}
+
+                    <!-- 題目內容 -->
+                    <div contenteditable="true" onblur="updateExamQuestionData(${qIdx}, 'title', this.innerText)" class="text-xs font-semibold text-slate-800 leading-relaxed outline-none p-1 rounded hover:bg-slate-50">${q.title}</div>
+
+                    <!-- 選項與互動單選區 -->
+                    <div class="space-y-2 pl-2">
+                        ${(q.options || []).map((optText, oIdx) => {
+                            const optKey = optionLabels[oIdx];
+                            const isChosen = userChoice === optKey;
+                            let optionClass = "border-slate-200 bg-white hover:border-blue-300";
+
+                            if (isSubmitted) {
+                                if (optKey === correctAnswer) optionClass = "border-emerald-500 bg-emerald-100/60 font-bold text-emerald-900";
+                                else if (isChosen) optionClass = "border-red-400 bg-red-100/60 font-bold text-red-900";
+                            }
+
+                            return `
+                                <label class="flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition ${optionClass}">
+                                    <input type="radio" name="question_opt_${qIdx}" value="${optKey}" ${isChosen ? 'checked' : ''} ${isSubmitted ? 'disabled' : ''} onchange="selectQuestionOption(${qIdx}, '${optKey}')" class="mt-0.5 text-blue-600 focus:ring-blue-500">
+                                    <span class="font-bold text-slate-500 mr-1">(${optKey})</span>
+                                    <span contenteditable="true" onblur="updateExamOptionData(${qIdx}, ${oIdx}, this.innerText)" class="outline-none flex-1">${optText.replace(/^\([A-D]\)\s*/, '')}</span>
+                                </label>
+                            `;
+                        }).join('')}
                     </div>
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+
+                    <!-- 提交作答與對答案控制 -->
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-3 text-xs flex-wrap">
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-slate-500">正確答案：</span>
-                            <input type="text" value="${q.answer || 'A'}" onchange="updateExamQuestionData(${qIdx}, 'answer', this.value)" class="w-10 text-center border rounded font-bold text-blue-600">
+                            <span class="font-semibold text-slate-500">正確答案設定：</span>
+                            <input type="text" value="${q.answer || 'A'}" onchange="updateExamQuestionData(${qIdx}, 'answer', this.value.toUpperCase())" class="w-10 text-center border rounded font-bold text-blue-600 p-0.5">
                         </div>
-                        <div class="flex items-center gap-2 flex-1 ml-4">
-                            <span class="font-semibold text-slate-500">解析/備註：</span>
-                            <input type="text" value="${q.analysis || ''}" placeholder="點此輸入錯題檢討解析..." onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" class="flex-1 border rounded px-2 py-0.5 text-slate-600">
+
+                        <div>
+                            ${!isSubmitted ? `
+                                <button onclick="submitQuestionAnswer(${qIdx})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-1.5 rounded-lg transition shadow-sm flex items-center gap-1.5">
+                                    <i class="fa-solid fa-paper-plane"></i> 提交答案觀看解析
+                                </button>
+                            ` : `
+                                <button onclick="resetSingleQuestionAnswer(${qIdx})" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition text-xs flex items-center gap-1">
+                                    <i class="fa-solid fa-rotate-left"></i> 重做此題
+                                </button>
+                            `}
                         </div>
                     </div>
+
+                    <!-- 提交後才顯示的解析區域 -->
+                    ${isSubmitted ? `
+                        <div class="mt-3 p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2 text-xs">
+                            <div class="font-bold text-amber-900 flex items-center gap-1.5 border-b border-amber-200/80 pb-1.5">
+                                <i class="fa-solid fa-lightbulb text-amber-500"></i> 答案與爭點詳細解析：
+                            </div>
+                            <textarea onchange="updateExamQuestionData(${qIdx}, 'analysis', this.value)" placeholder="點此輸入全題或各選項解析與考點筆記..." class="w-full h-20 p-2 text-xs text-slate-800 bg-white border border-amber-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none leading-relaxed">${q.analysis || ''}</textarea>
+                        </div>
+                    ` : ''}
+
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function parseAndBatchCreateExamQuestions() {
-            const rawText = document.getElementById('custom-exam-text').value.trim();
-            if (!rawText) return alert("請貼上考題全文！");
+        /* 考選部 PDF 試題上傳與自動解析 */
+        async function handlePDFExamUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+
+                parseAndImportQuestionsText(fullText);
+                input.value = '';
+            } catch (e) {
+                console.error("PDF 解析失敗：", e);
+                alert("PDF 解析失敗，請確認檔案是否為考選部原始試題！");
+            }
+        }
+
+        function parseAndImportQuestionsText(rawText) {
+            if (!rawText.trim()) return alert("未檢測到試題文字內容！");
 
             const lines = rawText.split('\n');
             let questions = [];
@@ -718,19 +817,81 @@
                 const isNewQuestion = /^[\d\uff10-\uff19]+[\uff0e\u002e\u3001]/.test(trimmed);
                 if (isNewQuestion) {
                     if (currentQ) questions.push(currentQ);
-                    currentQ = { title: trimmed, options: [], answer: 'A', analysis: '' };
+                    currentQ = { title: trimmed, options: [], answer: 'A', analysis: '', userChoice: '', submitted: false };
                 } else if (currentQ) {
-                    currentQ.options.push(trimmed);
+                    if (/^\([A-D]\)/.test(trimmed) || /^[A-D]\./.test(trimmed)) {
+                        currentQ.options.push(trimmed);
+                    } else if (currentQ.options.length === 0) {
+                        currentQ.title += ' ' + trimmed;
+                    } else {
+                        currentQ.options[currentQ.options.length - 1] += ' ' + trimmed;
+                    }
                 }
             });
             if (currentQ) questions.push(currentQ);
 
+            if (questions.length === 0) return alert("未成功分割出題目，請嘗試以智能文字貼上方式匯入。");
+
             if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
             allExamQuestionsMap[activeSubpageId] = allExamQuestionsMap[activeSubpageId].concat(questions);
 
-            closeExamBatchModal();
             renderMistakesTab();
             saveAllToStorage(true);
+            alert(`🎉 成功自動辨識並導入 ${questions.length} 道歷屆試題！`);
+        }
+
+        function parseAndBatchCreateExamQuestions() {
+            const rawText = document.getElementById('custom-exam-text').value.trim();
+            if (!rawText) return alert("請貼上考題全文！");
+            parseAndImportQuestionsText(rawText);
+            closeExamBatchModal();
+        }
+
+        function addNewExamQuestionCard() {
+            if (!allExamQuestionsMap[activeSubpageId]) allExamQuestionsMap[activeSubpageId] = [];
+            allExamQuestionsMap[activeSubpageId].unshift({
+                title: "1. 新試題題目內容...",
+                options: ["(A) 選項 A", "(B) 選項 B", "(C) 選項 C", "(D) 選項 D"],
+                answer: "A",
+                analysis: "",
+                userChoice: "",
+                submitted: false
+            });
+            renderMistakesTab();
+            saveAllToStorage(false);
+        }
+
+        function selectQuestionOption(qIdx, optionKey) {
+            if (allExamQuestionsMap[activeSubpageId] && allExamQuestionsMap[activeSubpageId][qIdx]) {
+                allExamQuestionsMap[activeSubpageId][qIdx].userChoice = optionKey;
+                saveAllToStorage(false);
+            }
+        }
+
+        function submitQuestionAnswer(qIdx) {
+            const q = allExamQuestionsMap[activeSubpageId][qIdx];
+            if (!q.userChoice) return alert("請先選擇一個答案再提交！");
+            q.submitted = true;
+            renderMistakesTab();
+            saveAllToStorage(false);
+        }
+
+        function resetSingleQuestionAnswer(qIdx) {
+            const q = allExamQuestionsMap[activeSubpageId][qIdx];
+            q.submitted = false;
+            q.userChoice = '';
+            renderMistakesTab();
+            saveAllToStorage(false);
+        }
+
+        function resetAllQuestionAnswers() {
+            const questions = allExamQuestionsMap[activeSubpageId] || [];
+            questions.forEach(q => {
+                q.submitted = false;
+                q.userChoice = '';
+            });
+            renderMistakesTab();
+            saveAllToStorage(false);
         }
 
         function updateExamQuestionData(qIdx, key, val) {
@@ -766,9 +927,8 @@
             }
         }
 
-        /* 🌟 核心修復與強化：左側欄「主頁面/子頁面」拖曳與排序引擎 */
+        /* 左側欄「主頁面/子頁面」拖曳與排序引擎 */
         function initDragAndDrop() {
-            // 1. 右側法條卡片拖曳
             const cardsContainer = document.getElementById('laws-container-inner');
             if (cardsContainer) {
                 if (cardSortable) cardSortable.destroy();
@@ -780,7 +940,6 @@
                 });
             }
 
-            // 2. 左側「主頁面（大分類）」上下拖曳
             const sidebarNav = document.getElementById('sidebar-nav');
             if (sidebarNav) {
                 if (sidebarSortable) sidebarSortable.destroy();
@@ -792,7 +951,6 @@
                 });
             }
 
-            // 3. 左側「子頁面」拖曳 (支援跨主頁面/同主頁面拖曳)
             document.querySelectorAll('.subpage-list').forEach(listEl => {
                 Sortable.create(listEl, {
                     group: 'subpages-group',
@@ -831,7 +989,7 @@
             saveAllToStorage(false);
         }
 
-        /* 初始化與應用程式進入點 */
+        /* 初始化與進入點 */
         function initApp() {
             loadFromLocalFallback();
             renderExamSelect();
@@ -930,7 +1088,7 @@
             if(shouldSync) saveAllToStorage(false);
         }
 
-        /* 🌟 修復功能：新增主頁面/子頁面 Modal 處理邏輯 */
+        /* Modal 介面邏輯 */
         function openAddPageModal(mode) {
             modalMode = mode;
             const modal = document.getElementById('page-modal');
@@ -950,7 +1108,6 @@
                 fieldSub.classList.remove('hidden');
                 document.getElementById('input-sub-title').value = '';
 
-                // 動態載入當前目標考試底下所有的主頁面供選取
                 const currentExam = systemData.exams[currentExamIndex];
                 if (currentExam && currentExam.categories.length > 0) {
                     selectParent.innerHTML = currentExam.categories.map(cat => 
@@ -1004,7 +1161,6 @@
             }
         }
 
-        /* 主頁面/子頁面 編輯與刪除 */
         function editCategoryName(catIdx) {
             const cat = systemData.exams[currentExamIndex].categories[catIdx];
             const newName = prompt("請輸入新的主頁面名稱：", cat.title);
@@ -1046,13 +1202,11 @@
             }
         }
 
-        /* 其他介面控制按鈕 Modal 開關 */
         function openLawUploadModal() { document.getElementById('law-upload-modal').classList.remove('hidden'); }
         function closeLawUploadModal() { document.getElementById('law-upload-modal').classList.add('hidden'); }
         function openExamBatchModal() { document.getElementById('exam-batch-modal').classList.remove('hidden'); }
         function closeExamBatchModal() { document.getElementById('exam-batch-modal').classList.add('hidden'); }
 
-        /* 條文卡片動態操作 */
         function addNewChapterHeader() {
             const container = document.getElementById('laws-container-inner');
             const chapHTML = `
